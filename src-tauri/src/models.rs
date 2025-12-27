@@ -9,11 +9,11 @@ pub struct CustomerConfig {
     pub type_: String,
     pub party_size: u32,
     
-    #[serde(rename = "canAttachBabyChair")]
-    pub can_attach_baby_chair: bool,
+    #[serde(rename = "babyChairCount")]
+    pub baby_chair_count: u32,
     
-    #[serde(rename = "isWheelchairAccessible")]
-    pub is_wheelchair_accessible: bool,
+    #[serde(rename = "wheelchairCount")]
+    pub wheelchair_count: u32,
     
     pub est_dining_time: u64,
 }

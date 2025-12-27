@@ -18,14 +18,14 @@ pub fn generate_customers(count: u32, max_arrival_time: u64) -> Vec<CustomerConf
         
         // Determine type
         let type_roll = rng.random_range(0..100);
-        let (type_, party_size_range, can_attach_baby_chair, is_wheelchair_accessible) = if type_roll < 40 {
-            ("INDIVIDUAL", 1..=2, false, false)
+        let (type_, party_size_range, baby_chair_count, wheelchair_count) = if type_roll < 40 {
+            ("INDIVIDUAL", 1..=2, 0, 0)
         } else if type_roll < 70 {
-            ("FAMILY", 3..=6, false, false)
+            ("FAMILY", 3..=6, 0, 0)
         } else if type_roll < 90 {
-            ("WITH_BABY", 2..=5, true, false)
+            ("WITH_BABY", 2..=5, 1, 0)
         } else {
-            ("WHEELCHAIR", 1..=3, false, true)
+            ("WHEELCHAIR", 1..=3, 0, 1)
         };
 
         let party_size = rng.random_range(party_size_range);
@@ -37,8 +37,8 @@ pub fn generate_customers(count: u32, max_arrival_time: u64) -> Vec<CustomerConf
             arrival_time,
             type_: type_.to_string(),
             party_size,
-            can_attach_baby_chair,
-            is_wheelchair_accessible,
+            baby_chair_count,
+            wheelchair_count,
             est_dining_time,
         });
     }

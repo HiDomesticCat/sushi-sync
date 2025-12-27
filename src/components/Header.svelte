@@ -121,17 +121,4 @@
       </Tooltip>
     </div>
   </div>
-
-  <!-- Status bar -->
-  <div class="h-1 bg-bg-main relative overflow-hidden">
-    {#if isRunning}
-      <div class="absolute inset-0 bg-gradient-to-r from-primary via-success to-primary animate-pulse"></div>
-    {:else if isComplete}
-      <div class="absolute inset-0 bg-success"></div>
-    {:else if hasCustomers}
-      <div class="absolute inset-0 bg-primary/50"></div>
-    {:else}
-      <div class="absolute inset-0 bg-accent/30"></div>
-    {/if}
-  </div>
 </header>

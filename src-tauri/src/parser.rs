@@ -25,8 +25,8 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
             type_: parts[2].trim().to_string(),
             arrival_time: parts[3].trim().parse()?,
             party_size: parts[4].trim().parse()?,
-            can_attach_baby_chair: parts[5].trim().parse().unwrap_or(false),
-            is_wheelchair_accessible: parts[6].trim().parse().unwrap_or(false),
+            baby_chair_count: parts[5].trim().parse().unwrap_or(0),
+            wheelchair_count: parts[6].trim().parse().unwrap_or(0),
             est_dining_time: parts[7].trim().parse()?,
         };
         customers.push(customer);

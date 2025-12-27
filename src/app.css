@@ -10,7 +10,7 @@
   --color-momo: #F596AA; /* Momo - Peach */
   --color-koucha: #98605E; /* Koucha - Reddish Brown */
   --color-kitsune: #D39E56; /* Kitsune - Fox/Gold */
-  --color-nezumi: #949495; /* Nezumi - Mouse Grey */
+  --color-nezumi: #666666; /* Nezumi - Mouse Grey (Darkened for contrast) */
   --color-washi: #F4F1EA; /* Washi - Japanese Paper */
   --color-hinoki: #E0D2C2; /* Hinoki - Cypress Wood */
   
@@ -120,9 +120,9 @@ body {
 }
 
 .seat-selected {
-  ring: 2px solid var(--color-ai);
+  /* ring: 2px solid var(--color-ai); */
+  box-shadow: 0 0 0 2px var(--color-ai), 4px 4px 0 rgba(22, 94, 131, 0.2);
   transform: translateY(-1px);
-  box-shadow: 4px 4px 0 rgba(22, 94, 131, 0.2);
 }
 
 /* Timeline Styles */

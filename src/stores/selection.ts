@@ -48,7 +48,7 @@ export function selectSeat(seatId: string, multiSelect = false) {
         selectedSeats: isSelected
           ? state.selectedSeats.filter(id => id !== seatId)
           : [...state.selectedSeats, seatId],
-        selectedFamilies: [],
+        // selectedFamilies: [], // Allow mixed selection
         selectedCustomer: null
       };
     }
@@ -83,7 +83,7 @@ export function selectFamily(familyId: number, multiSelect = false) {
         selectedFamilies: isSelected
           ? state.selectedFamilies.filter(id => id !== familyId)
           : [...state.selectedFamilies, familyId],
-        selectedSeats: [],
+        // selectedSeats: [], // Allow mixed selection
         selectedCustomer: null
       };
     }

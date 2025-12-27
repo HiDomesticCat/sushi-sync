@@ -1,48 +1,47 @@
 <script lang="ts">
   import Header from '../components/Header.svelte';
-  import SelectionTimeline from '../components/SelectionTimeline.svelte';
   import RestaurantMap from '../components/RestaurantMap.svelte';
+  import SelectionTimeline from '../components/SelectionTimeline.svelte';
   import LogTerminal from '../components/LogTerminal.svelte';
+  import AnalysisPanel from '../components/AnalysisPanel.svelte';
   import ExportModal from '../components/ExportModal.svelte';
   import SeatConfigModal from '../components/SeatConfigModal.svelte';
   import CustomerConfigModal from '../components/CustomerConfigModal.svelte';
-  import { Download } from 'lucide-svelte';
-  import Button from '../components/ui/Button.svelte';
-  import { openExportModal } from '../stores/ui';
   import { selectionStore } from '../stores/selection';
 </script>
 
-<div class="h-screen w-full bg-bg-main text-text-main flex flex-col overflow-hidden font-sans">
+<div class="flex flex-col h-screen w-full bg-gray-50 overflow-hidden">
   
-  <header class="border-b border-border z-10 bg-bg-panel shadow-sm shrink-0">
+  <div class="flex-none z-50">
     <Header />
-  </header>
-
-  <div class="bg-bg-panel border-b border-border p-4 z-0 shrink-0">
-    <SelectionTimeline />
   </div>
 
-  <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3">
+  <div class="flex-1 flex relative overflow-hidden">
     
-    <div class="lg:col-span-2 p-6 overflow-auto bg-bg-main relative">
-      <div class="absolute inset-0 pattern-seigaiha opacity-10 pointer-events-none"></div>
-      <RestaurantMap />
+    <div class="flex-1 flex flex-col relative min-w-0">
+      
+      <div class="flex-1 relative bg-gray-100">
+        <RestaurantMap />
+        
+        <div class="absolute bottom-4 left-4 z-40 w-96 max-h-48 opacity-90">
+             <LogTerminal />
+        </div>
+      </div>
+
+      <div class="flex-none flex flex-col z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <div class="border-t border-gray-200 bg-white">
+          <SelectionTimeline />
+        </div>
+      </div>
+      
     </div>
 
-    <div class="border-l border-border bg-bg-panel flex flex-col h-full min-h-0">
-      <div class="p-2 bg-wood text-sumi font-bold text-sm text-center shadow-sm flex justify-between items-center px-4 shrink-0">
-        <span>SYSTEM LOGS</span>
-        <Button variant="ghost" size="sm" onclick={openExportModal} class="text-sumi hover:bg-white/20">
-          <Download class="w-4 h-4 mr-1" />
-          Export
-        </Button>
-      </div>
-      <div class="flex-1 overflow-hidden p-2 bg-receipt">
-        <LogTerminal />
-      </div>
+    <div class="w-80 flex-none border-l border-gray-200 bg-white z-40 shadow-xl overflow-y-auto">
+      <AnalysisPanel />
     </div>
+
   </div>
-
+  
   <ExportModal />
   <SeatConfigModal />
   <CustomerConfigModal />

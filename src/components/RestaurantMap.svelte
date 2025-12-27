@@ -72,6 +72,20 @@
     e.stopPropagation();
     selectFamily(familyId, e.ctrlKey || e.metaKey);
   }
+
+  function getCustomerDetails(familyId: number) {
+    const customer = $customerConfigStore.find(c => c.familyId === familyId);
+    if (!customer) return `Family ${familyId}`;
+    
+    const typeLabel = {
+      'INDIVIDUAL': 'Individual',
+      'FAMILY': 'Family',
+      'WITH_BABY': 'With Baby',
+      'WHEELCHAIR': 'Wheelchair'
+    }[customer.type] || customer.type;
+    
+    return `Family ${familyId} • ${typeLabel} • ${customer.partySize} ppl`;
+  }
 </script>
 
 <Card variant="elevated" padding="md" class="min-h-full bg-bg-panel/80 backdrop-blur-sm">
@@ -95,32 +109,32 @@
       <div class="text-xs text-text-muted mb-2 uppercase tracking-wider font-bold">Bar Counter</div>
       <div class="flex flex-wrap gap-2 p-3 bg-wood rounded-lg border-b-4 border-border shadow-sm">
         {#each seats.filter(s => s.type === 'SINGLE') as seat}
-          <Tooltip text="{seat.id} {seat.occupiedBy ? `(Family ${seat.occupiedBy})` : '(Vacant)'}">
-            <div class="relative">
-              <button
-                onclick={(e) => handleSeatClick(seat.id, e)}
-                onmouseenter={() => setHoveredSeat(seat.id)}
-                onmouseleave={() => clearHover()}
-                class="{getSeatClasses(seat)} {getSeatSize(seat.type)}"
-                style="background-color: {getSeatColor(seat)}"
-                aria-label="Seat {seat.id}"
-              >
-                <span class="text-xs font-mono opacity-80 mix-blend-difference">{seat.id}</span>
-                {#if seat.isWheelchairAccessible}
-                  <Accessibility class="w-3 h-3 text-white drop-shadow-md" />
-                {/if}
-              </button>
-              {#if seat.occupiedBy !== null}
-                <button
-                  class="absolute -top-1 -right-1 bg-white/80 rounded-full p-0.5 shadow-sm hover:bg-white hover:scale-110 transition-all z-10"
-                  onclick={(e) => handleFamilyClick(seat.occupiedBy!, e)}
-                  title="Select Family {seat.occupiedBy}"
-                >
-                  <Users class="w-3 h-3 text-text-main" />
-                </button>
-              {/if}
-            </div>
-          </Tooltip>
+              <Tooltip text="{seat.id} {seat.occupiedBy ? getCustomerDetails(seat.occupiedBy) : '(Vacant)'}">
+                <div class="relative">
+                  <button
+                    onclick={(e) => handleSeatClick(seat.id, e)}
+                    onmouseenter={() => setHoveredSeat(seat.id)}
+                    onmouseleave={() => clearHover()}
+                    class="{getSeatClasses(seat)} {getSeatSize(seat.type)}"
+                    style="background-color: {getSeatColor(seat)}"
+                    aria-label="Seat {seat.id}"
+                  >
+                    <span class="text-xs font-mono opacity-80 mix-blend-difference">{seat.id}</span>
+                    {#if seat.isWheelchairAccessible}
+                      <Accessibility class="w-3 h-3 text-white drop-shadow-md" />
+                    {/if}
+                  </button>
+                  {#if seat.occupiedBy !== null}
+                    <button
+                      class="absolute -top-1 -right-1 bg-white/80 rounded-full p-0.5 shadow-sm hover:bg-white hover:scale-110 transition-all z-10"
+                      onclick={(e) => handleFamilyClick(seat.occupiedBy!, e)}
+                      title="Select Family {seat.occupiedBy}"
+                    >
+                      <Users class="w-3 h-3 text-text-main" />
+                    </button>
+                  {/if}
+                </div>
+              </Tooltip>
         {/each}
       </div>
     </div>
@@ -132,7 +146,7 @@
         <div class="text-xs text-text-muted mb-2 uppercase tracking-wider font-bold">4-Person Tables</div>
         <div class="flex flex-wrap gap-3">
           {#each seats.filter(s => s.type === '4P') as seat}
-            <Tooltip text="{seat.id} {seat.occupiedBy ? `(Family ${seat.occupiedBy})` : '(Vacant)'}">
+            <Tooltip text="{seat.id} {seat.occupiedBy ? getCustomerDetails(seat.occupiedBy) : '(Vacant)'}">
               <div class="relative">
                 <button
                   onclick={(e) => handleSeatClick(seat.id, e)}
@@ -172,7 +186,7 @@
         <div class="text-xs text-text-muted mb-2 uppercase tracking-wider font-bold">6-Person Tables</div>
         <div class="flex flex-wrap gap-3">
           {#each seats.filter(s => s.type === '6P') as seat}
-            <Tooltip text="{seat.id} {seat.occupiedBy ? `(Family ${seat.occupiedBy})` : '(Vacant)'}">
+            <Tooltip text="{seat.id} {seat.occupiedBy ? getCustomerDetails(seat.occupiedBy) : '(Vacant)'}">
               <div class="relative">
                 <button
                   onclick={(e) => handleSeatClick(seat.id, e)}

@@ -7,8 +7,8 @@ export interface Customer {
   familyId: number;
   type: CustomerType;
   partySize: number;
-  needsBabyChair: boolean;
-  needsWheelchair: boolean;
+  babyChairCount: number;
+  wheelchairCount: number;
   arrivalTime: number;
   estimatedDiningTime: number;
   status: CustomerStatus;
@@ -21,8 +21,8 @@ export interface CustomerConfig {
   arrivalTime: number;
   type: CustomerType;
   partySize: number;
-  needsBabyChair: boolean;
-  needsWheelchair: boolean;
+  babyChairCount: number;
+  wheelchairCount: number;
   estimatedDiningTime: number;
 }
 

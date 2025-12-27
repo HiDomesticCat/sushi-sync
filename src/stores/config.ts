@@ -94,8 +94,8 @@ export function loadCustomersFromCSV(csvContent: string): CustomerConfig[] {
       arrivalTime: parseInt(values[2]) || 0,
       type: (values[3] as CustomerConfig['type']) || 'INDIVIDUAL',
       partySize: parseInt(values[4]) || 1,
-      needsBabyChair: values[5]?.toLowerCase() === 'true',
-      needsWheelchair: values[6]?.toLowerCase() === 'true',
+      babyChairCount: parseInt(values[5]) || 0,
+      wheelchairCount: parseInt(values[6]) || 0,
       estimatedDiningTime: parseInt(values[7]) || 30
     };
     
@@ -111,11 +111,11 @@ export function importCustomersFromCSV(csvContent: string) {
 }
 
 export function exportCustomersToCSV(): string {
-  let csv = 'id,familyId,arrivalTime,type,partySize,needsBabyChair,needsWheelchair,estimatedDiningTime\n';
+  let csv = 'id,familyId,arrivalTime,type,partySize,babyChairCount,wheelchairCount,estimatedDiningTime\n';
   
   customerConfigStore.subscribe(customers => {
     customers.forEach(c => {
-      csv += `${c.id},${c.familyId},${c.arrivalTime},${c.type},${c.partySize},${c.needsBabyChair},${c.needsWheelchair},${c.estimatedDiningTime}\n`;
+      csv += `${c.id},${c.familyId},${c.arrivalTime},${c.type},${c.partySize},${c.babyChairCount},${c.wheelchairCount},${c.estimatedDiningTime}\n`;
     });
   })();
   
@@ -132,8 +132,8 @@ export async function generateCustomersInRust(count: number, maxArrivalTime: num
       arrivalTime: c.arrival_time,
       type: c.type,
       partySize: c.party_size,
-      needsBabyChair: c.canAttachBabyChair,
-      needsWheelchair: c.isWheelchairAccessible,
+      babyChairCount: c.babyChairCount,
+      wheelchairCount: c.wheelchairCount,
       estimatedDiningTime: c.est_dining_time
     }));
     

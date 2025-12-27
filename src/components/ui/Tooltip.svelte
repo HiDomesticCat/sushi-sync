@@ -92,7 +92,7 @@
 {#if isVisible}
   <div
     bind:this={tooltipEl}
-    class="fixed z-[9999] px-3 py-2 text-sm text-primary bg-panel border border-hinoki rounded-lg shadow-lg whitespace-nowrap pointer-events-none animate-fade-in"
+    class="fixed z-[9999] px-3 py-2 text-sm text-white bg-sumi/90 border border-hinoki rounded-lg shadow-lg whitespace-nowrap pointer-events-none animate-fade-in backdrop-blur-sm"
     style="top: {coords.top}px; left: {coords.left}px;"
     role="tooltip"
   >

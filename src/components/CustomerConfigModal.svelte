@@ -13,8 +13,8 @@
   let arrivalTime = $state(0);
   let partySize = $state(1);
   let customerType = $state<CustomerType>('INDIVIDUAL');
-  let needsBabyChair = $state(false);
-  let needsWheelchair = $state(false);
+  let babyChairCount = $state(0);
+  let wheelchairCount = $state(0);
   let diningTime = $state(30);
 
   const typeOptions = [
@@ -41,8 +41,8 @@
       arrivalTime: arrivalTime,
       type: customerType,
       partySize: partySize,
-      needsBabyChair: needsBabyChair || customerType === 'WITH_BABY',
-      needsWheelchair: needsWheelchair || customerType === 'WHEELCHAIR',
+      babyChairCount: babyChairCount,
+      wheelchairCount: wheelchairCount,
       estimatedDiningTime: diningTime
     };
     addCustomer(newCustomer);
@@ -99,14 +99,14 @@
 
   function addSampleData() {
     const samples: CustomerConfig[] = [
-      { id: 1, familyId: 1, arrivalTime: 0, type: 'INDIVIDUAL', partySize: 1, needsBabyChair: false, needsWheelchair: false, estimatedDiningTime: 20 },
-      { id: 2, familyId: 2, arrivalTime: 5, type: 'FAMILY', partySize: 4, needsBabyChair: false, needsWheelchair: false, estimatedDiningTime: 45 },
-      { id: 3, familyId: 3, arrivalTime: 10, type: 'WITH_BABY', partySize: 3, needsBabyChair: true, needsWheelchair: false, estimatedDiningTime: 40 },
-      { id: 4, familyId: 4, arrivalTime: 15, type: 'INDIVIDUAL', partySize: 2, needsBabyChair: false, needsWheelchair: false, estimatedDiningTime: 25 },
-      { id: 5, familyId: 5, arrivalTime: 20, type: 'WHEELCHAIR', partySize: 2, needsBabyChair: false, needsWheelchair: true, estimatedDiningTime: 35 },
-      { id: 6, familyId: 6, arrivalTime: 25, type: 'FAMILY', partySize: 6, needsBabyChair: true, needsWheelchair: false, estimatedDiningTime: 50 },
-      { id: 7, familyId: 7, arrivalTime: 30, type: 'INDIVIDUAL', partySize: 1, needsBabyChair: false, needsWheelchair: false, estimatedDiningTime: 15 },
-      { id: 8, familyId: 8, arrivalTime: 35, type: 'FAMILY', partySize: 3, needsBabyChair: false, needsWheelchair: false, estimatedDiningTime: 40 },
+      { id: 1, familyId: 1, arrivalTime: 0, type: 'INDIVIDUAL', partySize: 1, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 20 },
+      { id: 2, familyId: 2, arrivalTime: 5, type: 'FAMILY', partySize: 4, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 45 },
+      { id: 3, familyId: 3, arrivalTime: 10, type: 'WITH_BABY', partySize: 3, babyChairCount: 1, wheelchairCount: 0, estimatedDiningTime: 40 },
+      { id: 4, familyId: 4, arrivalTime: 15, type: 'INDIVIDUAL', partySize: 2, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 25 },
+      { id: 5, familyId: 5, arrivalTime: 20, type: 'WHEELCHAIR', partySize: 2, babyChairCount: 0, wheelchairCount: 1, estimatedDiningTime: 35 },
+      { id: 6, familyId: 6, arrivalTime: 25, type: 'FAMILY', partySize: 6, babyChairCount: 1, wheelchairCount: 0, estimatedDiningTime: 50 },
+      { id: 7, familyId: 7, arrivalTime: 30, type: 'INDIVIDUAL', partySize: 1, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 15 },
+      { id: 8, familyId: 8, arrivalTime: 35, type: 'FAMILY', partySize: 3, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 40 },
     ];
     customerConfigStore.set(samples);
   }
@@ -178,13 +178,23 @@
         </div>
 
         <div class="flex flex-col justify-end gap-1">
-          <label class="flex items-center gap-2 cursor-pointer text-sm">
-            <input type="checkbox" bind:checked={needsBabyChair} class="accent-success" />
-            <span class="text-text-main">Baby Chair</span>
+          <label class="block text-sm font-medium text-text-main mb-1">
+            Baby Chairs
+            <input
+              type="number"
+              bind:value={babyChairCount}
+              min="0"
+              class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
+            />
           </label>
-          <label class="flex items-center gap-2 cursor-pointer text-sm">
-            <input type="checkbox" bind:checked={needsWheelchair} class="accent-primary" />
-            <span class="text-text-main">Wheelchair</span>
+          <label class="block text-sm font-medium text-text-main mb-1">
+            Wheelchairs
+            <input
+              type="number"
+              bind:value={wheelchairCount}
+              min="0"
+              class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
+            />
           </label>
         </div>
 
@@ -245,8 +255,8 @@
                   <td class="py-2 px-2">{customer.partySize}</td>
                   <td class="py-2 px-2">{customer.estimatedDiningTime}m</td>
                   <td class="py-2 px-2">
-                    {#if customer.needsBabyChair}<Badge variant="info" size="sm">👶</Badge>{/if}
-                    {#if customer.needsWheelchair}<Badge variant="waiting" size="sm">♿</Badge>{/if}
+                    {#if customer.babyChairCount > 0}<Badge variant="info" size="sm">👶 {customer.babyChairCount}</Badge>{/if}
+                    {#if customer.wheelchairCount > 0}<Badge variant="waiting" size="sm">♿ {customer.wheelchairCount}</Badge>{/if}
                   </td>
                   <td class="py-2 px-2">
                     <button onclick={() => handleRemove(customer.id)} class="text-accent hover:text-red-400 p-2 rounded hover:bg-red-50 transition-colors">

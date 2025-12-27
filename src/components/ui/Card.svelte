@@ -8,7 +8,7 @@
 
   let { variant = 'default', padding = 'md', class: className = '', children }: Props = $props();
 
-  const baseClasses = 'bg-panel rounded-lg';
+  const baseClasses = 'bg-bg-panel rounded-lg';
 
   const variantClasses = {
     default: 'border border-hinoki/30',
