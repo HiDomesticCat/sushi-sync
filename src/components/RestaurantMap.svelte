@@ -9,14 +9,14 @@
   import { selectionStore, selectSeat, selectFamily, setHoveredSeat, clearHover } from '../stores/selection';
   import type { Seat } from '../types';
 
-  // 取得當前影格
+  // Get current frame
   $: currentFrame = $simulationStore.frames.length > 0
     ? getFrameAtTime(Math.floor($playbackStore.currentTime))
     : null;
 
-  // 合併靜態設定與動態狀態
+  // Merge static config with dynamic state
   $: seats = ($seatConfigStore.map(config => {
-    // 從 Frame 中找對應的動態資料
+    // Find corresponding dynamic data from Frame
     const dynamicSeat = currentFrame?.seats.find(s => s.id === config.id);
     return {
       ...config,
@@ -39,22 +39,22 @@
     if (seat.occupiedBy !== null) {
       return familyColors.get(seat.occupiedBy) || '#FF7E67';
     }
-    return 'white'; // 空位改為白色背景，方便顯示內部格子
+    return 'white'; // Empty seats use white background to show internal slots
   }
 
-  // 計算沙發內部要顯示幾個小方塊
+  // Calculate how many sub-slots to display inside a sofa
   function getSubSlots(seatType: string) {
     if (seatType === '4P') return 4;
     if (seatType === '6P') return 6;
     return 1; // Single
   }
 
-  // 決定每個小方塊的狀態 (是否被填滿)
+  // Determine if a sub-slot should be filled
   function isSubSlotFilled(seat: Seat, index: number): boolean {
     if (!seat.occupiedBy) return false;
     const customer = getCustomerInfo(seat.occupiedBy);
-    // 如果有人坐，根據 partySize 填滿對應數量的格子
-    // 例如：4人桌坐了3人，就亮3個燈
+    // If occupied, fill slots based on partySize
+    // e.g., if 3 people sit at a 4P table, light up 3 slots
     return customer ? index < customer.partySize : true;
   }
 
@@ -94,8 +94,7 @@
               
               <button
                 onclick={(e) => {
-                  // 点击座位总是选择座位
-                  // 點擊座位總是選擇座位
+                  // Clicking a seat always selects it
                   selectSeat(seat.id, e.ctrlKey);
                 }}
                 onmouseenter={() => setHoveredSeat(seat.id)}
@@ -136,7 +135,7 @@
                   {/if}
                 </div>
 
-                <!-- 有人坐時顯示圓球 -->
+                <!-- Show family ID bubble when occupied -->
                 {#if seat.occupiedBy && customer}
                   <div class="absolute bottom-0 right-0 z-10">
                     <div class="bg-blue-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:bg-blue-600 transition-colors"
@@ -194,7 +193,7 @@
 </Card>
 
 <style>
-  /* 定義一些簡單的動畫 */
+  /* Define simple animations */
   @keyframes bounce-slow {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }

@@ -6,7 +6,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
     
     for (i, line) in csv_content.lines().enumerate() {
         let line = line.trim();
-        // 跳過標題或空行
+        // Skip header or empty lines
         if line.is_empty() || (i == 0 && line.to_lowercase().starts_with("id")) {
             continue;
         }
@@ -18,10 +18,10 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
         if id == 0 { continue; }
 
         let arrival_time = parts.get(1).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
-        // 跳過 CSV 的 type 欄位 (index 2)，直接讀後面
+        // Read party_size from index 3
         let party_size = parts.get(3).and_then(|s| s.trim().parse().ok()).unwrap_or(1);
         
-        // 🔥 關鍵修正：相容 "true"/"1" 為 1，"false"/"0" 為 0，數字直接讀取
+        // Critical fix: compatible with "true"/"1" as 1, "false"/"0" as 0, or direct numeric parsing
         let baby_str = parts.get(4).unwrap_or(&"0").trim().to_lowercase();
         let baby_chair_count = if baby_str == "true" { 1 } else { baby_str.parse().unwrap_or(0) };
 
@@ -30,7 +30,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
 
         let est_dining_time = parts.get(6).and_then(|s| s.trim().parse().ok()).unwrap_or(60);
 
-        // 自動判斷類型
+        // Auto-determine type
         let type_ = if wheelchair_count > 0 {
             "WHEELCHAIR".to_string()
         } else if baby_chair_count > 0 {

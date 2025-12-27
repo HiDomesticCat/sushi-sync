@@ -9,8 +9,8 @@ pub struct CustomerConfig {
     #[serde(rename = "type")]
     pub type_: String,
     pub party_size: u32,
-    pub baby_chair_count: u32, // ✅ 必須是 u32
-    pub wheelchair_count: u32, // ✅ 必須是 u32
+    pub baby_chair_count: u32, // Must be u32
+    pub wheelchair_count: u32, // Must be u32
     pub est_dining_time: u64,
 }
 

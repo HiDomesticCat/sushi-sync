@@ -115,18 +115,28 @@ export const simulationStats = derived(simulationStore, ($store) => {
 // Helper functions for Header.svelte
 export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
   // Convert configs to CSV format for Rust backend
-  let csvContent = "family_id,customer_id,customer_type,arrival_time,party_size,needs_baby_chair,needs_wheelchair,estimated_dining_time\n";
+  // The CSV header must match what src-tauri/src/parser.rs expects
+  let csvContent = "id,arrival_time,type,party_size,baby_chair_count,wheelchair_count,est_dining_time\n";
   
   customerConfig.forEach(customer => {
-    csvContent += `${customer.familyId},${customer.id},${customer.type},${customer.arrivalTime},${customer.partySize},${customer.needsBabyChair},${customer.needsWheelchair},${customer.estimatedDiningTime}\n`;
+    csvContent += `${customer.id},${customer.arrivalTime},${customer.type},${customer.partySize},${customer.babyChairCount},${customer.wheelchairCount},${customer.estimatedDiningTime}\n`;
   });
+  
+  console.log("Sending CSV to Rust:", csvContent);
   
   simulationStore.update(s => ({ ...s, loading: true, error: null }));
   try {
-    // Pass seatConfig as JSON string or object
+    // Pass seatConfig as JSON string
     const seatConfigJson = JSON.stringify(seatConfig);
     const frames = await invoke<SimulationFrame[]>('start_simulation', { csvContent, seatConfigJson });
     console.log("Rust simulation finished, frames:", frames.length);
+    
+    if (frames.length > 0) {
+      loadSimulationFrames(frames);
+    } else {
+      console.warn("Rust returned 0 frames");
+    }
+    
     return frames;
   } catch (err) {
     console.error("Simulation failed:", err);
@@ -159,33 +169,37 @@ export function getFrameAtTime(timestamp: number) {
   const store = get(simulationStore);
   if (store.frames.length === 0) return null;
   
-  // Find the frame that is closest to the timestamp
-  let closestFrame = store.frames[0];
-  let minDiff = Math.abs(store.frames[0].timestamp - timestamp);
+  // Find the frame that is closest to the timestamp without exceeding it
+  let bestFrame = store.frames[0];
   
-  for (let i = 1; i < store.frames.length; i++) {
-    const diff = Math.abs(store.frames[i].timestamp - timestamp);
-    if (diff < minDiff) {
-      minDiff = diff;
-      closestFrame = store.frames[i];
+  for (let i = 0; i < store.frames.length; i++) {
+    if (store.frames[i].timestamp <= timestamp) {
+      bestFrame = store.frames[i];
+    } else {
+      break;
     }
   }
   
-  return closestFrame;
+  return bestFrame;
 }
 
 export const actions = {
-  startSimulation: async (csvContent: string) => {
+  startSimulation: async (csvContent: string, seatConfig: any[]) => {
     simulationStore.update(s => ({ ...s, loading: true, error: null }));
     try {
-      const frames = await invoke<SimulationFrame[]>('start_simulation', { csvContent });
+      const seatConfigJson = JSON.stringify(seatConfig);
+      const frames = await invoke<SimulationFrame[]>('start_simulation', { csvContent, seatConfigJson });
       console.log("Rust simulation finished, frames:", frames.length);
-      simulationStore.update(s => ({
-        ...s,
-        frames: frames,
-        currentFrameIndex: 0,
-        loading: false
-      }));
+      if (frames.length > 0) {
+        simulationStore.update(s => ({
+          ...s,
+          frames: frames,
+          currentFrameIndex: 0,
+          loading: false
+        }));
+      } else {
+        simulationStore.update(s => ({ ...s, loading: false }));
+      }
     } catch (err) {
       console.error("Simulation failed:", err);
       simulationStore.update(s => ({ ...s, loading: false, error: String(err) }));

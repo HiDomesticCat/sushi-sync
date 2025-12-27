@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
 use std::time::Duration;
 
-// 常數設定
+// Constants
 const DEFAULT_BABY_CHAIRS: i32 = 4;
 const WAIT_TIMEOUT_MS: u64 = 3000;
 
@@ -84,9 +84,9 @@ pub fn start_simulation(csv_content: String, seat_config_json: String) -> Result
             let mut res = lock.lock().unwrap();
             
             loop {
-                // 使用 try_allocate 嘗試分配
+                // Try to allocate seats
                 if let Some(seat_ids) = try_allocate(&res, &customer) {
-                    // 分配成功：扣資源
+                    // Allocation successful: deduct resources
                     res.baby_chairs_available -= customer.baby_chair_count as i32;
                     for sid in &seat_ids {
                         if let Some(seat) = res.seats.iter_mut().find(|s| s.config.id == *sid) {
@@ -97,7 +97,7 @@ pub fn start_simulation(csv_content: String, seat_config_json: String) -> Result
                     break;
                 }
 
-                // 分配失敗：等待
+                // Allocation failed: wait
                 let result = cvar.wait_timeout(res, Duration::from_millis(WAIT_TIMEOUT_MS)).unwrap();
                 res = result.0;
                 if result.1.timed_out() {
@@ -121,13 +121,13 @@ pub fn start_simulation(csv_content: String, seat_config_json: String) -> Result
                 log_message: format!("[{}] Customer {} Sat at {}", sit_time, customer.id, seat_str),
             });
 
-            drop(res); // 釋放鎖模擬吃飯
+            drop(res); // Release lock to simulate eating
 
             // 4. Leave
             let leave_time = sit_time + customer.est_dining_time;
             let mut res = lock.lock().unwrap();
             
-            // 歸還資源
+            // Return resources
             res.baby_chairs_available += customer.baby_chair_count as i32;
             for sid in &seated_seat_ids {
                 if let Some(seat) = res.seats.iter_mut().find(|s| s.config.id == *sid) {
@@ -170,14 +170,14 @@ pub fn generate_customers(count: u32) -> Vec<CustomerConfig> {
 }
 
 fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<String>> {
-    // 🔥 檢查庫存 (u32 比較)
+    // Check baby chair availability
     if customer.baby_chair_count > 0 && res.baby_chairs_available < customer.baby_chair_count as i32 {
         return None;
     }
 
     let required = customer.party_size as usize;
 
-    // 輪椅邏輯：必須坐沙發 (4P/6P)
+    // Wheelchair logic: must sit in sofa (4P/6P)
     if customer.wheelchair_count > 0 {
         let seats: Vec<String> = res.seats.iter()
             .filter(|s| s.occupied_by.is_none() && (s.config.type_ == "4P" || s.config.type_ == "6P"))
@@ -185,7 +185,7 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
         return if seats.len() == required { Some(seats) } else { None };
     }
 
-    // 一般邏輯：多人優先坐沙發，沒位子坐吧台
+    // General logic: groups prefer sofas, otherwise bar counter
     if customer.party_size > 1 {
         let sofa: Vec<String> = res.seats.iter()
             .filter(|s| s.occupied_by.is_none() && (s.config.type_ == "4P" || s.config.type_ == "6P"))
@@ -193,7 +193,7 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
         if sofa.len() == required { return Some(sofa); }
     }
 
-    // 最後嘗試任意位子 (例如吧台)
+    // Finally try any available seats (e.g., bar counter)
     let any_seats: Vec<String> = res.seats.iter()
         .filter(|s| s.occupied_by.is_none())
         .take(required).map(|s| s.config.id.clone()).collect();
@@ -215,17 +215,15 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
     }).collect();
     
     let mut event_idx = 0;
-    // 建立快取：哪些家庭有帶小孩 (用於視覺化 isBabyChairAttached)
+    // Cache: which families have babies (for isBabyChairAttached visualization)
     let mut family_has_baby = std::collections::HashMap::new();
 
-    // 預先掃描所有事件來標記屬性
+    // Pre-scan all events to mark attributes
     for evt in &sorted_events {
-        // 修復語法錯誤：使用正確的 match 語法
         match evt.action {
             Action::Arrive => {
                 if evt.log_message.contains("Baby:") {
-                    // 簡單解析 Log 字串判斷是否有嬰兒，或者更好是直接存起來
-                    // 這裡為了簡化，假設 log 格式正確
+                    // Simple parsing of log string to determine if there's a baby
                     if evt.log_message.contains("Baby: 1") || evt.log_message.contains("Baby: 2") {
                         family_has_baby.insert(evt.family_id, true);
                     }
@@ -243,8 +241,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                     for id in ids.split(',') {
                         if let Some(s) = current_seats.iter_mut().find(|seat| seat.id == id) {
                             s.occupied_by = Some(evt.family_id);
-                            // 如果這個家庭有帶小孩，將座位標記為有嬰兒椅
-                            // 前端會根據此屬性顯示氣泡
+                            // If family has a baby, mark seat as having a baby chair
                             if family_has_baby.contains_key(&evt.family_id) {
                                 s.is_baby_chair_attached = true;
                             }
@@ -264,13 +261,35 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
             event_idx += 1;
         }
         
+        let frame_events: Vec<crate::models::SimulationEvent> = sorted_events.iter()
+            .filter(|e| e.time == t)
+            .map(|e| crate::models::SimulationEvent {
+                timestamp: e.time,
+                type_: match &e.action {
+                    Action::Arrive => "ARRIVED".to_string(),
+                    Action::Sit(_) => "SEATED".to_string(),
+                    Action::Leave(_) => "LEFT".to_string(),
+                    Action::Error(_) => "ERROR".to_string(),
+                },
+                customer_id: e.customer_id,
+                family_id: e.family_id,
+                seat_id: match &e.action {
+                    Action::Sit(id) | Action::Leave(id) => Some(id.clone()),
+                    _ => None,
+                },
+                message: e.log_message.clone(),
+            }).collect();
+
+        let frame_logs: Vec<String> = frame_events.iter().map(|e| e.message.clone()).collect();
+
         frames.push(SimulationFrame {
             timestamp: t,
             seats: current_seats.clone(),
-            waiting_queue: vec![], // 可根據需要實作等待隊列
-            events: vec![],
-            logs: vec![],
+            waiting_queue: vec![], // Can implement waiting queue if needed
+            events: frame_events,
+            logs: frame_logs,
         });
     }
+    println!("Generated {} frames", frames.len());
     Ok(frames)
 }

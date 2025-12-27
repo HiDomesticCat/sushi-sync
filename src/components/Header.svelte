@@ -24,7 +24,6 @@
     if (!$isSimulationComplete && hasCustomers) {
       // Run simulation first
       const frames = await runSimulation($seatConfigStore, $customerConfigStore);
-      loadSimulationFrames(frames);
       
       // Set max time based on simulation
       const maxTime = frames.length > 0 ? frames[frames.length - 1].timestamp : 100;
