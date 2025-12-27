@@ -1,9 +1,9 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 
 interface PlaybackState {
   currentTime: number;
   isPlaying: boolean;
-  speed: number;  // 0.5, 1, 2, 4
+  speed: number;
   maxTime: number;
 }
 
@@ -14,59 +14,50 @@ export const playbackStore = writable<PlaybackState>({
   maxTime: 100
 });
 
-// Derived store for formatted time display
-export const formattedCurrentTime = derived(
-  playbackStore,
-  $playback => formatTime($playback.currentTime)
+// ===== Derived Stores =====
+export const formattedCurrentTime = derived(playbackStore, ($playback) => 
+  formatTime($playback.currentTime)
 );
 
-export const formattedMaxTime = derived(
-  playbackStore,
-  $playback => formatTime($playback.maxTime)
+export const formattedMaxTime = derived(playbackStore, ($playback) => 
+  formatTime($playback.maxTime)
 );
 
-// Derived store for progress percentage
-export const progressPercentage = derived(
-  playbackStore,
-  $playback => $playback.maxTime > 0 ? ($playback.currentTime / $playback.maxTime) * 100 : 0
+export const progressPercentage = derived(playbackStore, ($playback) =>
+  $playback.maxTime > 0 ? ($playback.currentTime / $playback.maxTime) * 100 : 0
 );
 
-// Derived store to check if playback is at the end
-export const isAtEnd = derived(
-  playbackStore,
-  $playback => $playback.currentTime >= $playback.maxTime
+export const isAtEnd = derived(playbackStore, ($playback) =>
+  $playback.currentTime >= $playback.maxTime
 );
 
-// Derived store to check if playback is at the beginning
-export const isAtStart = derived(
-  playbackStore,
-  $playback => $playback.currentTime <= 0
+export const isAtStart = derived(playbackStore, ($playback) =>
+  $playback.currentTime <= 0
 );
 
-// Internal interval reference
-let playbackInterval: number | null = null;
+// ===== Internal State =====
+let playbackInterval: ReturnType<typeof setInterval> | null = null;
 
-// Helper functions
+// ===== Control Functions =====
 export function play() {
-  playbackStore.update(state => {
-    if (state.currentTime >= state.maxTime) {
-      // If at the end, restart from beginning
-      return { ...state, currentTime: 0, isPlaying: true };
-    }
-    return { ...state, isPlaying: true };
-  });
+  const state = get(playbackStore);
   
+  if (state.currentTime >= state.maxTime) {
+    playbackStore.update(s => ({ ...s, currentTime: 0 }));
+  }
+  
+  playbackStore.update(s => ({ ...s, isPlaying: true }));
   startPlaybackInterval();
 }
 
 export function pause() {
-  playbackStore.update(state => ({ ...state, isPlaying: false }));
+  playbackStore.update(s => ({ ...s, isPlaying: false }));
   stopPlaybackInterval();
 }
 
 export function toggle() {
-  const currentState = getCurrentPlaybackState();
-  if (currentState.isPlaying) {
+  const state = get(playbackStore);
+  if (state.isPlaying) {
     pause();
   } else {
     play();
@@ -74,9 +65,9 @@ export function toggle() {
 }
 
 export function setTime(time: number) {
-  playbackStore.update(state => ({
-    ...state,
-    currentTime: Math.max(0, Math.min(time, state.maxTime))
+  playbackStore.update(s => ({
+    ...s,
+    currentTime: Math.max(0, Math.min(time, s.maxTime))
   }));
 }
 
@@ -84,35 +75,34 @@ export function setSpeed(speed: number) {
   const validSpeeds = [0.25, 0.5, 1, 2, 4];
   const clampedSpeed = validSpeeds.includes(speed) ? speed : 1;
   
-  playbackStore.update(state => ({ ...state, speed: clampedSpeed }));
+  playbackStore.update(s => ({ ...s, speed: clampedSpeed }));
   
-  // Restart interval with new speed if playing
-  const currentState = getCurrentPlaybackState();
-  if (currentState.isPlaying) {
+  const state = get(playbackStore);
+  if (state.isPlaying) {
     stopPlaybackInterval();
     startPlaybackInterval();
   }
 }
 
 export function setMaxTime(max: number) {
-  playbackStore.update(state => ({
-    ...state,
+  playbackStore.update(s => ({
+    ...s,
     maxTime: Math.max(0, max),
-    currentTime: Math.min(state.currentTime, max)
+    currentTime: Math.min(s.currentTime, max)
   }));
 }
 
 export function stepForward() {
-  playbackStore.update(state => ({
-    ...state,
-    currentTime: Math.min(state.currentTime + 1, state.maxTime)
+  playbackStore.update(s => ({
+    ...s,
+    currentTime: Math.min(s.currentTime + 1, s.maxTime)
   }));
 }
 
 export function stepBackward() {
-  playbackStore.update(state => ({
-    ...state,
-    currentTime: Math.max(state.currentTime - 1, 0)
+  playbackStore.update(s => ({
+    ...s,
+    currentTime: Math.max(s.currentTime - 1, 0)
   }));
 }
 
@@ -121,10 +111,8 @@ export function jumpToStart() {
 }
 
 export function jumpToEnd() {
-  playbackStore.update(state => {
-    setTime(state.maxTime);
-    return state;
-  });
+  const state = get(playbackStore);
+  setTime(state.maxTime);
 }
 
 export function reset() {
@@ -132,37 +120,29 @@ export function reset() {
   setTime(0);
 }
 
-// Internal helper functions
-function getCurrentPlaybackState(): PlaybackState {
-  let currentState: PlaybackState;
-  playbackStore.subscribe(state => {
-    currentState = state;
-  })();
-  return currentState!;
-}
-
+// ===== Internal Functions =====
 function startPlaybackInterval() {
-  stopPlaybackInterval(); // Clear any existing interval
+  stopPlaybackInterval();
   
-  const currentState = getCurrentPlaybackState();
-  const intervalMs = Math.max(50, 1000 / currentState.speed); // Minimum 50ms interval
+  const state = get(playbackStore);
+  const intervalMs = Math.max(50, 100 / state.speed);
   
   playbackInterval = setInterval(() => {
-    playbackStore.update(state => {
-      if (!state.isPlaying) {
+    playbackStore.update(s => {
+      if (!s.isPlaying) {
         stopPlaybackInterval();
-        return state;
+        return s;
       }
       
-      const newTime = state.currentTime + (state.speed * 0.1); // Increment by 0.1 seconds * speed
+      const increment = s.speed * 0.1;
+      const newTime = s.currentTime + increment;
       
-      if (newTime >= state.maxTime) {
-        // Reached the end
+      if (newTime >= s.maxTime) {
         stopPlaybackInterval();
-        return { ...state, currentTime: state.maxTime, isPlaying: false };
+        return { ...s, currentTime: s.maxTime, isPlaying: false };
       }
       
-      return { ...state, currentTime: newTime };
+      return { ...s, currentTime: newTime };
     });
   }, intervalMs);
 }
@@ -174,7 +154,7 @@ function stopPlaybackInterval() {
   }
 }
 
-// Utility function to format time as HH:MM:SS
+// ===== Utility Functions =====
 export function formatTime(seconds: number): string {
   const totalSeconds = Math.floor(seconds);
   const hours = Math.floor(totalSeconds / 3600);
@@ -184,32 +164,22 @@ export function formatTime(seconds: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Utility function to parse time string back to seconds
 export function parseTime(timeString: string): number {
   const parts = timeString.split(':').map(p => parseInt(p, 10));
   if (parts.length !== 3) return 0;
-  
-  const [hours, minutes, seconds] = parts;
-  return hours * 3600 + minutes * 60 + seconds;
+  return parts[0] * 3600 + parts[1] * 60 + parts[2];
 }
 
-// Speed presets
 export const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4] as const;
 export type SpeedPreset = typeof SPEED_PRESETS[number];
 
-export function getNextSpeed(currentSpeed: number): SpeedPreset {
-  const currentIndex = SPEED_PRESETS.indexOf(currentSpeed as SpeedPreset);
+export function cycleSpeed() {
+  const state = get(playbackStore);
+  const currentIndex = SPEED_PRESETS.indexOf(state.speed as SpeedPreset);
   const nextIndex = (currentIndex + 1) % SPEED_PRESETS.length;
-  return SPEED_PRESETS[nextIndex];
+  setSpeed(SPEED_PRESETS[nextIndex]);
 }
 
-export function getPreviousSpeed(currentSpeed: number): SpeedPreset {
-  const currentIndex = SPEED_PRESETS.indexOf(currentSpeed as SpeedPreset);
-  const prevIndex = currentIndex <= 0 ? SPEED_PRESETS.length - 1 : currentIndex - 1;
-  return SPEED_PRESETS[prevIndex];
-}
-
-// Cleanup function to be called when component unmounts
 export function cleanup() {
   stopPlaybackInterval();
 }

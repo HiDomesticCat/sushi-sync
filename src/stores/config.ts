@@ -1,37 +1,64 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import type { SeatConfig, CustomerConfig } from '../types';
 
-// Default seat configuration
+// ===== Default Seat Configuration =====
 const defaultSeats: SeatConfig[] = [
   // Single seats (S01-S10)
   ...Array.from({ length: 10 }, (_, i) => ({
     id: `S${String(i + 1).padStart(2, '0')}`,
     type: 'SINGLE' as const,
-    canAttachBabyChair: true,
-    isWheelchairAccessible: i < 2 // First 2 single seats are wheelchair accessible
+    canAttachBabyChair: i >= 5, // Last 5 can attach baby chairs
+    isWheelchairAccessible: i < 2 // First 2 are wheelchair accessible
   })),
-  
-  // Four-person tables (4P01-4P04)
+  // 4-person tables (4P01-4P04)
   ...Array.from({ length: 4 }, (_, i) => ({
     id: `4P${String(i + 1).padStart(2, '0')}`,
     type: '4P' as const,
     canAttachBabyChair: true,
-    isWheelchairAccessible: i < 2 // First 2 four-person tables are wheelchair accessible
+    isWheelchairAccessible: i < 2
   })),
-  
-  // Six-person tables (6P01-6P02)
+  // 6-person tables (6P01-6P02)
   ...Array.from({ length: 2 }, (_, i) => ({
     id: `6P${String(i + 1).padStart(2, '0')}`,
     type: '6P' as const,
     canAttachBabyChair: true,
-    isWheelchairAccessible: i === 0 // Only first six-person table is wheelchair accessible
+    isWheelchairAccessible: i === 0
   }))
 ];
 
+// ===== Stores =====
 export const seatConfigStore = writable<SeatConfig[]>(defaultSeats);
 export const customerConfigStore = writable<CustomerConfig[]>([]);
 
-// Helper functions for customer management
+// ===== Derived Stores =====
+export const totalCapacity = derived(seatConfigStore, ($seats) => {
+  return $seats.reduce((total, seat) => {
+    switch (seat.type) {
+      case 'SINGLE': return total + 1;
+      case '4P': return total + 4;
+      case '6P': return total + 6;
+      default: return total;
+    }
+  }, 0);
+});
+
+export const seatsByType = derived(seatConfigStore, ($seats) => {
+  return {
+    single: $seats.filter(s => s.type === 'SINGLE'),
+    fourPerson: $seats.filter(s => s.type === '4P'),
+    sixPerson: $seats.filter(s => s.type === '6P')
+  };
+});
+
+export const wheelchairAccessibleSeats = derived(seatConfigStore, ($seats) => {
+  return $seats.filter(s => s.isWheelchairAccessible);
+});
+
+export const babyChairCapableSeats = derived(seatConfigStore, ($seats) => {
+  return $seats.filter(s => s.canAttachBabyChair);
+});
+
+// ===== Customer Helper Functions =====
 export function addCustomer(customer: CustomerConfig) {
   customerConfigStore.update(customers => [...customers, customer]);
 }
@@ -41,7 +68,7 @@ export function removeCustomer(id: number) {
 }
 
 export function updateCustomer(id: number, updates: Partial<CustomerConfig>) {
-  customerConfigStore.update(customers => 
+  customerConfigStore.update(customers =>
     customers.map(c => c.id === id ? { ...c, ...updates } : c)
   );
 }
@@ -52,14 +79,13 @@ export function clearCustomers() {
 
 export function loadCustomersFromCSV(csvContent: string): CustomerConfig[] {
   const lines = csvContent.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
+  if (lines.length < 2) return [];
   
   const customers: CustomerConfig[] = [];
   
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(',').map(v => v.trim());
-    
-    if (values.length !== headers.length) continue;
+    if (values.length < 8) continue;
     
     const customer: CustomerConfig = {
       id: parseInt(values[0]) || i,
@@ -83,45 +109,40 @@ export function importCustomersFromCSV(csvContent: string) {
   customerConfigStore.set(customers);
 }
 
-// Helper functions for seat management
-export function addSeat(seat: SeatConfig) {
-  seatConfigStore.update(seats => [...seats, seat]);
+export function exportCustomersToCSV(): string {
+  let csv = 'id,familyId,arrivalTime,type,partySize,needsBabyChair,needsWheelchair,estimatedDiningTime\n';
+  
+  customerConfigStore.subscribe(customers => {
+    customers.forEach(c => {
+      csv += `${c.id},${c.familyId},${c.arrivalTime},${c.type},${c.partySize},${c.needsBabyChair},${c.needsWheelchair},${c.estimatedDiningTime}\n`;
+    });
+  })();
+  
+  return csv;
 }
 
-export function removeSeat(id: string) {
-  seatConfigStore.update(seats => seats.filter(s => s.id !== id));
-}
-
-export function updateSeat(id: string, updates: Partial<SeatConfig>) {
-  seatConfigStore.update(seats => 
-    seats.map(s => s.id === id ? { ...s, ...updates } : s)
-  );
-}
-
+// ===== Seat Helper Functions =====
 export function resetSeatsToDefault() {
   seatConfigStore.set(defaultSeats);
 }
 
-// Utility functions
+export function updateSeatConfig(seats: SeatConfig[]) {
+  seatConfigStore.set(seats);
+}
+
+// ===== Color Generation =====
+const FAMILY_COLORS = [
+  '#FF7E67', '#B8D086', '#82AAFF', '#FFB347', '#DDA0DD',
+  '#98FB98', '#F0E68C', '#FFA07A', '#87CEEB', '#DEB887',
+  '#E6E6FA', '#F5DEB3', '#ADD8E6', '#FFB6C1', '#90EE90'
+];
+
 export function generateCustomerColors(customers: CustomerConfig[]): Map<number, string> {
-  const colors = [
-    '#FF7E67', // salmon
-    '#B8D086', // matcha
-    '#82AAFF', // ocean
-    '#FFB347', // orange
-    '#DDA0DD', // plum
-    '#98FB98', // pale green
-    '#F0E68C', // khaki
-    '#FFA07A', // light salmon
-    '#87CEEB', // sky blue
-    '#DEB887'  // burlywood
-  ];
-  
   const colorMap = new Map<number, string>();
   const familyIds = [...new Set(customers.map(c => c.familyId))];
   
   familyIds.forEach((familyId, index) => {
-    colorMap.set(familyId, colors[index % colors.length]);
+    colorMap.set(familyId, FAMILY_COLORS[index % FAMILY_COLORS.length]);
   });
   
   return colorMap;

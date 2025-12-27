@@ -1,210 +1,128 @@
 <script lang="ts">
   import Header from '../components/Header.svelte';
+  import RestaurantMap from '../components/RestaurantMap.svelte';
+  import MasterTimeline from '../components/MasterTimeline.svelte';
+  import AnalysisPanel from '../components/AnalysisPanel.svelte';
+  import LogTerminal from '../components/LogTerminal.svelte';
   import SeatConfigModal from '../components/SeatConfigModal.svelte';
-  import Card from '../components/ui/Card.svelte';
-  import Badge from '../components/ui/Badge.svelte';
-  import { customerConfigStore, seatConfigStore } from '../stores/config';
+  import CustomerConfigModal from '../components/CustomerConfigModal.svelte';
+  import ExportModal from '../components/ExportModal.svelte';
+  import { uiStore, toggleAnalysisPanel } from '../stores/ui';
   import { simulationStore } from '../stores/simulation';
-  import { playbackStore } from '../stores/playback';
+  import { customerConfigStore, seatConfigStore } from '../stores/config';
+  import { ChevronRight, ChevronLeft } from 'lucide-svelte';
 
-  // Reactive state for dashboard
-  $: customerCount = $customerConfigStore.length;
-  $: seatCount = $seatConfigStore.length;
-  $: isSimulationRunning = $simulationStore.isRunning;
-  $: isSimulationComplete = $simulationStore.isComplete;
-  $: currentTime = $playbackStore.currentTime;
+  $: showAnalysis = $uiStore.showAnalysisPanel;
+  $: hasData = $customerConfigStore.length > 0;
 </script>
 
-<div class="min-h-screen bg-sumi">
+<svelte:head>
+  <title>Sushi Sync 🍣</title>
+</svelte:head>
+
+<div class="min-h-screen bg-sumi flex flex-col">
+  <!-- Header -->
   <Header />
-  
-  <!-- Main content with top padding to account for fixed header -->
-  <main class="pt-20 px-6 pb-6">
-    <div class="max-w-7xl mx-auto">
-      
-      <!-- Welcome Section -->
-      <div class="text-center mb-12">
-        <h1 class="text-5xl font-bold mb-4 text-hinoki">
-          🍣 Sushi Sync
-        </h1>
-        <p class="text-xl text-muted mb-6">
+
+  <!-- Main Content -->
+  <main class="flex-1 pt-[72px] flex">
+    <!-- Left Panel - Restaurant Map & Timeline -->
+    <div class="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+      <!-- Restaurant Map -->
+      <div class="flex-1 min-h-0">
+        <RestaurantMap />
+      </div>
+
+      <!-- Master Timeline -->
+      <div class="h-auto">
+        <MasterTimeline />
+      </div>
+    </div>
+
+    <!-- Right Panel - Analysis & Log -->
+    <div
+      class="flex flex-col border-l border-hinoki/30 transition-all duration-300 {showAnalysis ? 'w-96' : 'w-0'}"
+    >
+      {#if showAnalysis}
+        <div class="flex-1 flex flex-col p-4 gap-4 overflow-hidden animate-fade-in">
+          <!-- Analysis Panel -->
+          <div class="h-1/2 min-h-0">
+            <AnalysisPanel />
+          </div>
+
+          <!-- Log Terminal -->
+          <div class="h-1/2 min-h-0">
+            <LogTerminal />
+          </div>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Panel Toggle Button -->
+    <button
+      onclick={toggleAnalysisPanel}
+      class="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-panel border border-hinoki rounded-l-lg p-2 hover:bg-hinoki hover:text-sumi transition-colors"
+      aria-label={showAnalysis ? 'Hide analysis panel' : 'Show analysis panel'}
+    >
+      {#if showAnalysis}
+        <ChevronRight class="w-4 h-4" />
+      {:else}
+        <ChevronLeft class="w-4 h-4" />
+      {/if}
+    </button>
+  </main>
+
+  <!-- Welcome Overlay (when no data) -->
+  {#if !hasData && !$simulationStore.isComplete}
+    <div class="fixed inset-0 z-30 flex items-center justify-center bg-sumi/80 backdrop-blur-sm">
+      <div class="bg-panel border-2 border-hinoki rounded-xl p-8 max-w-lg text-center animate-fade-in">
+        <div class="text-6xl mb-4">🍣</div>
+        <h1 class="text-3xl font-bold text-hinoki mb-2">Welcome to Sushi Sync</h1>
+        <p class="text-muted mb-6">
           Restaurant Simulator for Operating Systems Course
         </p>
-        <div class="flex justify-center gap-3">
-          <Badge variant="dining">Stage 3 Complete</Badge>
-          <Badge variant="waiting">Stores & Header</Badge>
+
+        <div class="space-y-4 text-left mb-6">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 bg-ocean/20 rounded-full flex items-center justify-center text-ocean font-bold">1</div>
+            <div>
+              <div class="font-medium text-primary">Configure Seats</div>
+              <div class="text-xs text-muted">Set up your restaurant layout</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 bg-matcha/20 rounded-full flex items-center justify-center text-matcha font-bold">2</div>
+            <div>
+              <div class="font-medium text-primary">Add Customers</div>
+              <div class="text-xs text-muted">Define arrivals and preferences</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 bg-salmon/20 rounded-full flex items-center justify-center text-salmon font-bold">3</div>
+            <div>
+              <div class="font-medium text-primary">Run Simulation</div>
+              <div class="text-xs text-muted">Press the red button to start</div>
+            </div>
+          </div>
         </div>
+
+        <p class="text-xs text-muted">
+          Click <strong>Customers</strong> in the header to get started,<br />
+          or load sample data for a quick demo.
+        </p>
       </div>
-
-      <!-- Status Dashboard -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        
-        <!-- Seat Status -->
-        <Card variant="elevated" padding="lg">
-          <div class="text-center">
-            <div class="text-3xl font-bold text-hinoki mb-2">{seatCount}</div>
-            <div class="text-sm text-muted">Seats Configured</div>
-            {#if seatCount === 0}
-              <div class="mt-2">
-                <Badge variant="conflict" size="sm">Configure Required</Badge>
-              </div>
-            {:else}
-              <div class="mt-2">
-                <Badge variant="dining" size="sm">Ready</Badge>
-              </div>
-            {/if}
-          </div>
-        </Card>
-
-        <!-- Customer Status -->
-        <Card variant="elevated" padding="lg">
-          <div class="text-center">
-            <div class="text-3xl font-bold text-ocean mb-2">{customerCount}</div>
-            <div class="text-sm text-muted">Customers Configured</div>
-            {#if customerCount === 0}
-              <div class="mt-2">
-                <Badge variant="conflict" size="sm">Configure Required</Badge>
-              </div>
-            {:else}
-              <div class="mt-2">
-                <Badge variant="dining" size="sm">Ready</Badge>
-              </div>
-            {/if}
-          </div>
-        </Card>
-
-        <!-- Simulation Status -->
-        <Card variant="elevated" padding="lg">
-          <div class="text-center">
-            <div class="text-3xl font-bold text-matcha mb-2">
-              {#if isSimulationRunning}
-                ▶
-              {:else if isSimulationComplete}
-                ✓
-              {:else}
-                ⏸
-              {/if}
-            </div>
-            <div class="text-sm text-muted">Simulation Status</div>
-            <div class="mt-2">
-              {#if isSimulationRunning}
-                <Badge variant="waiting" size="sm">Running</Badge>
-              {:else if isSimulationComplete}
-                <Badge variant="dining" size="sm">Complete</Badge>
-              {:else}
-                <Badge variant="default" size="sm">Ready</Badge>
-              {/if}
-            </div>
-          </div>
-        </Card>
-
-        <!-- Current Time -->
-        <Card variant="elevated" padding="lg">
-          <div class="text-center">
-            <div class="text-3xl font-bold text-salmon mb-2 font-mono">
-              {Math.floor(currentTime)}s
-            </div>
-            <div class="text-sm text-muted">Current Time</div>
-            <div class="mt-2">
-              <Badge variant="waiting" size="sm">Timeline</Badge>
-            </div>
-          </div>
-        </Card>
-
-        <!-- Frame Count -->
-        <Card variant="elevated" padding="lg">
-          <div class="text-center">
-            <div class="text-3xl font-bold text-hinoki mb-2">{$simulationStore.frames.length}</div>
-            <div class="text-sm text-muted">Simulation Frames</div>
-            <div class="mt-2">
-              <Badge variant="default" size="sm">Data Points</Badge>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <!-- Instructions Section -->
-      <Card variant="elevated" padding="lg" class="mb-8">
-        <h2 class="text-2xl font-semibold mb-6 text-hinoki">Getting Started</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          <!-- Step 1 -->
-          <div class="text-center">
-            <div class="w-12 h-12 bg-ocean rounded-full flex items-center justify-center mx-auto mb-4">
-              <span class="text-xl font-bold text-primary">1</span>
-            </div>
-            <h3 class="text-lg font-medium mb-2 text-primary">Configure Seats</h3>
-            <p class="text-sm text-muted mb-4">
-              Set up your restaurant layout with single seats, 4-person tables, and 6-person tables. 
-              Configure wheelchair accessibility and baby chair options.
-            </p>
-            <Badge variant="default" size="sm">🪑 Seat Config</Badge>
-          </div>
-
-          <!-- Step 2 -->
-          <div class="text-center">
-            <div class="w-12 h-12 bg-matcha rounded-full flex items-center justify-center mx-auto mb-4">
-              <span class="text-xl font-bold text-sumi">2</span>
-            </div>
-            <h3 class="text-lg font-medium mb-2 text-primary">Add Customers</h3>
-            <p class="text-sm text-muted mb-4">
-              Define customer arrivals, party sizes, and special requirements. 
-              Import from CSV or create manually with arrival times and preferences.
-            </p>
-            <Badge variant="default" size="sm">👥 Customer Config</Badge>
-          </div>
-
-          <!-- Step 3 -->
-          <div class="text-center">
-            <div class="w-12 h-12 bg-salmon rounded-full flex items-center justify-center mx-auto mb-4">
-              <span class="text-xl font-bold text-primary">3</span>
-            </div>
-            <h3 class="text-lg font-medium mb-2 text-primary">Run Simulation</h3>
-            <p class="text-sm text-muted mb-4">
-              Press the red call bell to start the simulation. 
-              Watch the timeline and analyze resource conflicts and scheduling efficiency.
-            </p>
-            <Badge variant="default" size="sm">▶ Start Simulation</Badge>
-          </div>
-        </div>
-      </Card>
-
-      <!-- Features Overview -->
-      <Card variant="elevated" padding="lg">
-        <h2 class="text-2xl font-semibold mb-6 text-hinoki">System Features</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          <!-- Left Column -->
-          <div>
-            <h3 class="text-lg font-medium mb-4 text-primary">🏗️ Architecture & Design</h3>
-            <ul class="space-y-2 text-sm text-muted">
-              <li>• <strong>Modern Zen Theme:</strong> Japanese-inspired UI with wood textures and traditional patterns</li>
-              <li>• <strong>SvelteKit 5:</strong> Latest reactive framework with TypeScript support</li>
-              <li>• <strong>Tailwind CSS v4:</strong> Custom design system with semantic color variables</li>
-              <li>• <strong>Component Library:</strong> Reusable UI components with accessibility features</li>
-              <li>• <strong>State Management:</strong> Svelte stores for configuration, simulation, and UI state</li>
-            </ul>
-          </div>
-
-          <!-- Right Column -->
-          <div>
-            <h3 class="text-lg font-medium mb-4 text-primary">⚙️ Simulation Engine</h3>
-            <ul class="space-y-2 text-sm text-muted">
-              <li>• <strong>Multi-threading Visualization:</strong> See resource contention in real-time</li>
-              <li>• <strong>Timeline Playback:</strong> Step through simulation frames with speed controls</li>
-              <li>• <strong>Conflict Detection:</strong> Identify scheduling conflicts and resource bottlenecks</li>
-              <li>• <strong>Data Export:</strong> Export simulation logs and analysis for further study</li>
-              <li>• <strong>Interactive Selection:</strong> Click and analyze specific customers or seats</li>
-            </ul>
-          </div>
-        </div>
-      </Card>
-
     </div>
-  </main>
+  {/if}
 
   <!-- Modals -->
   <SeatConfigModal />
+  <CustomerConfigModal />
+  <ExportModal />
 </div>
+
+<style>
+  /* Ensure proper stacking */
+  main {
+    position: relative;
+  }
+</style>
