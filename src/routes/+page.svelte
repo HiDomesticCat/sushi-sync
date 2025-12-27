@@ -1,13 +1,15 @@
 <script lang="ts">
   import Header from '../components/Header.svelte';
+  import SeatConfigModal from '../components/SeatConfigModal.svelte';
   import Card from '../components/ui/Card.svelte';
   import Badge from '../components/ui/Badge.svelte';
-  import { customerConfigStore } from '../stores/config';
+  import { customerConfigStore, seatConfigStore } from '../stores/config';
   import { simulationStore } from '../stores/simulation';
   import { playbackStore } from '../stores/playback';
 
   // Reactive state for dashboard
   $: customerCount = $customerConfigStore.length;
+  $: seatCount = $seatConfigStore.length;
   $: isSimulationRunning = $simulationStore.isRunning;
   $: isSimulationComplete = $simulationStore.isComplete;
   $: currentTime = $playbackStore.currentTime;
@@ -37,6 +39,23 @@
       <!-- Status Dashboard -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
+        <!-- Seat Status -->
+        <Card variant="elevated" padding="lg">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-hinoki mb-2">{seatCount}</div>
+            <div class="text-sm text-muted">Seats Configured</div>
+            {#if seatCount === 0}
+              <div class="mt-2">
+                <Badge variant="conflict" size="sm">Configure Required</Badge>
+              </div>
+            {:else}
+              <div class="mt-2">
+                <Badge variant="dining" size="sm">Ready</Badge>
+              </div>
+            {/if}
+          </div>
+        </Card>
+
         <!-- Customer Status -->
         <Card variant="elevated" padding="lg">
           <div class="text-center">
@@ -185,4 +204,7 @@
 
     </div>
   </main>
+
+  <!-- Modals -->
+  <SeatConfigModal />
 </div>
