@@ -17,6 +17,7 @@ npm install
 ### Running the Application
 ```bash
 npm run tauri dev
+# xvfb-run npm run tauri dev
 ```
 
 ---

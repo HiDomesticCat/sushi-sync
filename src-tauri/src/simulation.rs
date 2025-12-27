@@ -22,7 +22,7 @@ pub fn start_simulation(csv_content: String, seat_config_json: String) -> Result
         type_: s.type_.clone(),
         occupied_by: None,
         is_baby_chair_attached: false,
-        is_wheelchair_accessible: s.isWheelchairAccessible,
+        is_wheelchair_accessible: s.is_wheelchair_accessible,
     }).collect();
 
     // Sort customers by arrival

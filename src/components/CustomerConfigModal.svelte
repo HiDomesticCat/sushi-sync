@@ -127,24 +127,28 @@
 
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div>
-          <label class="block text-sm font-medium text-text-main mb-1">Arrival (sec)</label>
-          <input
-            type="number"
-            bind:value={arrivalTime}
-            min="0"
-            class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
-          />
+          <label class="block text-sm font-medium text-text-main mb-1">
+            Arrival (sec)
+            <input
+              type="number"
+              bind:value={arrivalTime}
+              min="0"
+              class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
+            />
+          </label>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-text-main mb-1">Party Size</label>
-          <input
-            type="number"
-            bind:value={partySize}
-            min="1"
-            max="10"
-            class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
-          />
+          <label class="block text-sm font-medium text-text-main mb-1">
+            Party Size
+            <input
+              type="number"
+              bind:value={partySize}
+              min="1"
+              max="10"
+              class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
+            />
+          </label>
         </div>
 
         <div>
@@ -152,14 +156,16 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-text-main mb-1">Duration (min)</label>
-          <input
-            type="number"
-            bind:value={diningTime}
-            min="10"
-            max="120"
-            class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
-          />
+          <label class="block text-sm font-medium text-text-main mb-1">
+            Duration (min)
+            <input
+              type="number"
+              bind:value={diningTime}
+              min="10"
+              max="120"
+              class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
+            />
+          </label>
         </div>
 
         <div class="flex flex-col justify-end gap-1">

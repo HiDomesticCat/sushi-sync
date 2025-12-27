@@ -2,7 +2,7 @@
   import { BarChart3, Clock, Users, AlertTriangle, TrendingUp, Activity } from 'lucide-svelte';
   import Card from './ui/Card.svelte';
   import Badge from './ui/Badge.svelte';
-  import { simulationStats, simulationStore } from '../stores/simulation';
+  import { simulationStats, simulationStore, isSimulationComplete } from '../stores/simulation';
   import { selectionStore } from '../stores/selection';
   import { customerConfigStore, seatConfigStore, totalCapacity } from '../stores/config';
   import { formatTime } from '../stores/playback';
@@ -89,7 +89,7 @@
     </Badge>
   </div>
 
-  {#if $simulationStore.isComplete}
+  {#if $isSimulationComplete}
     <!-- Statistics Grid -->
     <div class="grid grid-cols-2 gap-3 mb-6">
       <div class="bg-sumi rounded-lg p-3">

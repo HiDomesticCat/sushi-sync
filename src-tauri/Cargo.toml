@@ -14,3 +14,9 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
+
+# 在 src-tauri/Cargo.toml 檔案最後面加入：
+[profile.dev]
+incremental = false # 關閉增量編譯以節省磁碟空間
+debug = 0           # 關閉除錯符號 (這是最吃空間的部分)
+strip = "debuginfo" # 移除執行檔中的除錯資訊

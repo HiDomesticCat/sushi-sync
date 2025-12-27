@@ -5,25 +5,35 @@ pub struct CustomerConfig {
     pub family_id: u32,
     pub id: u32,
     pub arrival_time: u64,
+    #[serde(rename = "type")]
     pub type_: String,
     pub party_size: u32,
-    pub baby_chair: bool,
-    pub wheel_chair: bool,
+    
+    #[serde(rename = "canAttachBabyChair")]
+    pub can_attach_baby_chair: bool,
+    
+    #[serde(rename = "isWheelchairAccessible")]
+    pub is_wheelchair_accessible: bool,
+    
     pub est_dining_time: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SeatConfig {
     pub id: String,
+    #[serde(rename = "type")]
     pub type_: String,
-    pub canAttachBabyChair: bool,
-    pub isWheelchairAccessible: bool,
+    #[serde(rename = "canAttachBabyChair")]
+    pub can_attach_baby_chair: bool,
+    #[serde(rename = "isWheelchairAccessible")]
+    pub is_wheelchair_accessible: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationEvent {
     pub timestamp: u64,
+    #[serde(rename = "type")]
     pub type_: String, // "ARRIVAL", "SEATED", "LEFT", "CONFLICT"
     pub customer_id: u32,
     pub family_id: u32,
@@ -35,6 +45,7 @@ pub struct SimulationEvent {
 #[serde(rename_all = "camelCase")]
 pub struct Seat {
     pub id: String,
+    #[serde(rename = "type")]
     pub type_: String,
     pub occupied_by: Option<u32>, // family_id
     pub is_baby_chair_attached: bool,
@@ -46,6 +57,7 @@ pub struct Seat {
 pub struct Customer {
     pub id: u32,
     pub family_id: u32,
+    #[serde(rename = "type")]
     pub type_: String,
     pub party_size: u32,
     pub color: String,

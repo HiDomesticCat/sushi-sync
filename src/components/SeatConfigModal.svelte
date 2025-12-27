@@ -116,26 +116,30 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-primary mb-2">Count (1-20)</label>
-          <input
-            type="range"
-            bind:value={singleCount}
-            min="0"
-            max="20"
-            class="w-full accent-salmon"
-          />
+          <label class="block text-sm font-medium text-primary mb-2">
+            Count (1-20)
+            <input
+              type="range"
+              bind:value={singleCount}
+              min="0"
+              max="20"
+              class="w-full accent-salmon"
+            />
+          </label>
           <div class="text-center text-lg font-bold text-salmon">{singleCount}</div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-primary mb-2">Wheelchair Accessible</label>
-          <input
-            type="range"
-            bind:value={singleWheelchair}
-            min="0"
-            max={singleCount}
-            class="w-full accent-ocean"
-          />
+          <label class="block text-sm font-medium text-primary mb-2">
+            Wheelchair Accessible
+            <input
+              type="range"
+              bind:value={singleWheelchair}
+              min="0"
+              max={singleCount}
+              class="w-full accent-ocean"
+            />
+          </label>
           <div class="text-center text-lg font-bold text-ocean">{singleWheelchair}</div>
         </div>
 
@@ -157,26 +161,30 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-primary mb-2">Count (0-10)</label>
-          <input
-            type="range"
-            bind:value={fourPersonCount}
-            min="0"
-            max="10"
-            class="w-full accent-salmon"
-          />
+          <label class="block text-sm font-medium text-primary mb-2">
+            Count (0-10)
+            <input
+              type="range"
+              bind:value={fourPersonCount}
+              min="0"
+              max="10"
+              class="w-full accent-salmon"
+            />
+          </label>
           <div class="text-center text-lg font-bold text-salmon">{fourPersonCount}</div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-primary mb-2">Wheelchair Accessible</label>
-          <input
-            type="range"
-            bind:value={fourPersonWheelchair}
-            min="0"
-            max={fourPersonCount}
-            class="w-full accent-ocean"
-          />
+          <label class="block text-sm font-medium text-primary mb-2">
+            Wheelchair Accessible
+            <input
+              type="range"
+              bind:value={fourPersonWheelchair}
+              min="0"
+              max={fourPersonCount}
+              class="w-full accent-ocean"
+            />
+          </label>
           <div class="text-center text-lg font-bold text-ocean">{fourPersonWheelchair}</div>
         </div>
 
@@ -198,26 +206,30 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-primary mb-2">Count (0-5)</label>
-          <input
-            type="range"
-            bind:value={sixPersonCount}
-            min="0"
-            max="5"
-            class="w-full accent-salmon"
-          />
+          <label class="block text-sm font-medium text-primary mb-2">
+            Count (0-5)
+            <input
+              type="range"
+              bind:value={sixPersonCount}
+              min="0"
+              max="5"
+              class="w-full accent-salmon"
+            />
+          </label>
           <div class="text-center text-lg font-bold text-salmon">{sixPersonCount}</div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-primary mb-2">Wheelchair Accessible</label>
-          <input
-            type="range"
-            bind:value={sixPersonWheelchair}
-            min="0"
-            max={sixPersonCount}
-            class="w-full accent-ocean"
-          />
+          <label class="block text-sm font-medium text-primary mb-2">
+            Wheelchair Accessible
+            <input
+              type="range"
+              bind:value={sixPersonWheelchair}
+              min="0"
+              max={sixPersonCount}
+              class="w-full accent-ocean"
+            />
+          </label>
           <div class="text-center text-lg font-bold text-ocean">{sixPersonWheelchair}</div>
         </div>
 

@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import type { SimulationFrame } from '../types';
 
@@ -151,7 +151,7 @@ export function resetSimulation() {
 }
 
 export function getFrameAtTime(timestamp: number) {
-  const store = simulationStore.get();
+  const store = get(simulationStore);
   if (store.frames.length === 0) return null;
   
   // Find the frame that is closest to the timestamp

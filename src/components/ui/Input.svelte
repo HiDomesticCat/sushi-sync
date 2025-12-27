@@ -24,13 +24,13 @@
     ...props
   }: Props = $props();
 
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  let inputId = $derived(id || `input-${Math.random().toString(36).substr(2, 9)}`);
 
   const baseClasses = 'w-full px-4 py-2 bg-sumi border-2 rounded-lg text-primary placeholder-muted transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-panel disabled:opacity-50 disabled:cursor-not-allowed';
 
-  const stateClasses = error
+  let stateClasses = $derived(error
     ? 'border-salmon focus:border-salmon focus:ring-salmon'
-    : 'border-hinoki focus:border-ocean focus:ring-ocean';
+    : 'border-hinoki focus:border-ocean focus:ring-ocean');
 </script>
 
 <div class="space-y-1">

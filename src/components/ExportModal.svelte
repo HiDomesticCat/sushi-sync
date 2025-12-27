@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { Download, FileText, FileSpreadsheet, Copy, Check } from 'lucide-svelte';
   import Modal from './ui/Modal.svelte';
   import Card from './ui/Card.svelte';
@@ -79,7 +79,7 @@
     downloadFile(csv, 'sushi-sync-events.csv', 'text/csv');
   }
 
-  function downloadFile(content, filename, mimeType) {
+  function downloadFile(content: string, filename: string, mimeType: string) {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

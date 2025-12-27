@@ -1,33 +1,24 @@
-use serde::Serialize;
-use std::fmt;
+use serde::{Serialize, Serializer};
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum AppError {
-    CsvParseError(String),
-    JsonParseError(String),
+    #[error("Simulation error: {0}")]
     SimulationError(String),
-    IoError(std::io::Error),
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+    #[error("CSV parsing error: {0}")]
+    CsvParseError(String),
+    #[error("JSON parsing error: {0}")]
+    JsonParseError(String),
 }
-
-impl fmt::Display for AppError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AppError::CsvParseError(msg) => write!(f, "CSV Parsing Error: {}", msg),
-            AppError::JsonParseError(msg) => write!(f, "JSON Parsing Error: {}", msg),
-            AppError::SimulationError(msg) => write!(f, "Simulation Error: {}", msg),
-            AppError::IoError(e) => write!(f, "IO Error: {}", e),
-        }
-    }
-}
-
-impl std::error::Error for AppError {}
 
 impl Serialize for AppError {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
-        S: serde::ser::Serializer,
+        S: Serializer,
     {
-        serializer.serialize_str(self.to_string().as_ref())
+        serializer.serialize_str(self.to_string().as_str())
     }
 }
 
