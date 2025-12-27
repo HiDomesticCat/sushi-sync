@@ -1,53 +1,33 @@
 <script lang="ts">
   import { simulationStore } from '../stores/simulation';
-  import { playbackStore, setTime } from '../stores/playback';
+  import { playbackStore } from '../stores/playback';
   
-  // 取得總時間與當前時間
-  let totalDuration = $derived($simulationStore.frames.length);
-  let currentTime = $derived($playbackStore.currentTime);
+  // 安全獲取長度，避免 undefined 錯誤
+  $: totalDuration = $simulationStore.frames ? $simulationStore.frames.length : 0;
+  $: currentFrame = Math.floor($playbackStore.currentTime);
   
   function handleSeek(e: Event) {
     const target = e.target as HTMLInputElement;
-    const time = parseInt(target.value);
-    setTime(time);
+    const val = parseInt(target.value);
+    playbackStore.update(s => ({ ...s, currentTime: val }));
   }
 </script>
 
-<div class="w-full h-16 flex-none bg-white/90 border-t border-gray-200 px-4 py-2 flex flex-col justify-center z-50 shadow-lg">
+<div class="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-[100] px-6 py-2 flex flex-col justify-center">
   
-  <div class="flex justify-between text-xs text-gray-500 mb-1">
-    <span>Start (0s)</span>
-    <span class="font-bold text-primary">Current: {currentTime}s</span>
-    <span>End ({totalDuration}s)</span>
+  <div class="flex justify-between text-xs font-mono text-gray-500 mb-2">
+    <span>00:00</span>
+    <span class="font-bold text-blue-600 text-sm">T = {currentFrame} / {totalDuration}</span>
+    <span>End</span>
   </div>
 
   <input
     type="range"
     min="0"
     max={totalDuration > 0 ? totalDuration - 1 : 0}
-    value={currentTime}
+    value={currentFrame}
     oninput={handleSeek}
-    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 transition-all"
     disabled={totalDuration === 0}
   />
-  
-  <style>
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      height: 16px;
-      width: 16px;
-      border-radius: 50%;
-      background: #ff6b6b; /* Primary color */
-      cursor: pointer;
-      margin-top: -6px; /* 垂直置中修正 */
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    input[type=range]::-webkit-slider-runnable-track {
-      width: 100%;
-      height: 4px;
-      cursor: pointer;
-      background: #e5e7eb;
-      border-radius: 2px;
-    }
-  </style>
 </div>
