@@ -1,9 +1,12 @@
 <script lang="ts">
-  let {
-    variant = 'default',
-    size = 'md',
-    class: className = ''
-  } = $props();
+  type Props = {
+    variant?: 'default' | 'waiting' | 'dining' | 'conflict' | 'info';
+    size?: 'sm' | 'md';
+    class?: string;
+    children?: import('svelte').Snippet;
+  };
+
+  let { variant = 'default', size = 'md', class: className = '', children }: Props = $props();
 
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-full border-2';
 

@@ -127,23 +127,23 @@
 
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div>
-          <label class="block text-sm font-medium text-primary mb-1">Arrival (sec)</label>
+          <label class="block text-sm font-medium text-text-main mb-1">Arrival (sec)</label>
           <input
             type="number"
             bind:value={arrivalTime}
             min="0"
-            class="w-full px-3 py-2 bg-sumi border-2 border-hinoki rounded-lg text-primary"
+            class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-primary mb-1">Party Size</label>
+          <label class="block text-sm font-medium text-text-main mb-1">Party Size</label>
           <input
             type="number"
             bind:value={partySize}
             min="1"
             max="10"
-            class="w-full px-3 py-2 bg-sumi border-2 border-hinoki rounded-lg text-primary"
+            class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
           />
         </div>
 
@@ -152,24 +152,24 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-primary mb-1">Duration (min)</label>
+          <label class="block text-sm font-medium text-text-main mb-1">Duration (min)</label>
           <input
             type="number"
             bind:value={diningTime}
             min="10"
             max="120"
-            class="w-full px-3 py-2 bg-sumi border-2 border-hinoki rounded-lg text-primary"
+            class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
           />
         </div>
 
         <div class="flex flex-col justify-end gap-1">
           <label class="flex items-center gap-2 cursor-pointer text-sm">
-            <input type="checkbox" bind:checked={needsBabyChair} class="accent-matcha" />
-            <span class="text-primary">Baby Chair</span>
+            <input type="checkbox" bind:checked={needsBabyChair} class="accent-success" />
+            <span class="text-text-main">Baby Chair</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer text-sm">
-            <input type="checkbox" bind:checked={needsWheelchair} class="accent-ocean" />
-            <span class="text-primary">Wheelchair</span>
+            <input type="checkbox" bind:checked={needsWheelchair} class="accent-primary" />
+            <span class="text-text-main">Wheelchair</span>
           </label>
         </div>
 
@@ -184,29 +184,29 @@
     <!-- Customer List -->
     <Card variant="bordered" padding="md">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-hinoki">
+        <h3 class="text-lg font-semibold text-text-main">
           Customers ({$customerConfigStore.length})
         </h3>
         <div class="flex gap-2">
-          <Button variant="ghost" size="sm" onclick={addSampleData}>Sample</Button>
-          <Button variant="ghost" size="sm" onclick={handleImport}>
+          <Button variant="secondary" size="sm" onclick={addSampleData}>Sample</Button>
+          <Button variant="secondary" size="sm" onclick={handleImport}>
             <Upload class="w-4 h-4 mr-1" /> Import
           </Button>
-          <Button variant="ghost" size="sm" onclick={handleExport} disabled={$customerConfigStore.length === 0}>
+          <Button variant="secondary" size="sm" onclick={handleExport} disabled={$customerConfigStore.length === 0}>
             <Download class="w-4 h-4 mr-1" /> Export
           </Button>
         </div>
       </div>
 
       {#if $customerConfigStore.length === 0}
-        <div class="text-center py-8 text-muted">
+        <div class="text-center py-8 text-text-muted">
           <p>No customers yet. Add manually or load sample data.</p>
         </div>
       {:else}
         <div class="max-h-64 overflow-y-auto">
           <table class="w-full text-sm">
-            <thead class="sticky top-0 bg-panel">
-              <tr class="text-left text-muted border-b border-hinoki">
+            <thead class="sticky top-0 bg-bg-panel">
+              <tr class="text-left text-text-muted border-b border-border">
                 <th class="py-2 px-2">ID</th>
                 <th class="py-2 px-2">Type</th>
                 <th class="py-2 px-2">Arrival</th>
@@ -218,7 +218,7 @@
             </thead>
             <tbody>
               {#each $customerConfigStore as customer}
-                <tr class="border-b border-hinoki/30 hover:bg-sumi/50">
+                <tr class="border-b border-border/30 hover:bg-black/5">
                   <td class="py-2 px-2 font-mono">{customer.familyId}</td>
                   <td class="py-2 px-2">
                     <span class="text-lg mr-1">{getTypeIcon(customer.type)}</span>
@@ -231,7 +231,7 @@
                     {#if customer.needsWheelchair}<Badge variant="waiting" size="sm">♿</Badge>{/if}
                   </td>
                   <td class="py-2 px-2">
-                    <button onclick={() => handleRemove(customer.id)} class="text-salmon hover:text-red-400">
+                    <button onclick={() => handleRemove(customer.id)} class="text-accent hover:text-red-400 p-2 rounded hover:bg-red-50 transition-colors">
                       <Trash2 class="w-4 h-4" />
                     </button>
                   </td>
@@ -244,8 +244,10 @@
     </Card>
   </div>
 
-  <div slot="footer" class="flex justify-between">
-    <Button variant="danger" onclick={handleClearAll} disabled={$customerConfigStore.length === 0}>Clear All</Button>
-    <Button variant="primary" onclick={closeCustomerConfigModal}>Done</Button>
-  </div>
+  {#snippet footer()}
+    <div class="flex justify-between w-full">
+      <Button variant="danger" onclick={handleClearAll} disabled={$customerConfigStore.length === 0}>Clear All</Button>
+      <Button variant="primary" onclick={closeCustomerConfigModal}>Done</Button>
+    </div>
+  {/snippet}
 </Modal>

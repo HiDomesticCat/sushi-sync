@@ -8,9 +8,10 @@
   import { simulationStore, simulationStats, allEvents } from '../stores/simulation';
   import { seatConfigStore, customerConfigStore } from '../stores/config';
   import { formatTime } from '../stores/playback';
+  import { derived } from 'svelte/store';
 
   let copied = false;
-  let stats = $derived($simulationStats);
+  $: stats = $simulationStats;
 
   function generateExportData() {
     return {
@@ -185,7 +186,7 @@
     </div>
   </div>
 
-  <div slot="footer">
+  {#snippet footer()}
     <Button variant="primary" onclick={closeExportModal}>Close</Button>
-  </div>
+  {/snippet}
 </Modal>

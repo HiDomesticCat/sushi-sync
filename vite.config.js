@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [
     sveltekit({
       compilerOptions: {
-        runes: false
+        // runes: true // Default in Svelte 5
       }
     })
   ],

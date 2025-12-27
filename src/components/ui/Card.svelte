@@ -1,9 +1,12 @@
 <script lang="ts">
-  let {
-    variant = 'default',
-    padding = 'md',
-    class: className = ''
-  } = $props();
+  type Props = {
+    variant?: 'default' | 'elevated' | 'bordered';
+    padding?: 'none' | 'sm' | 'md' | 'lg';
+    class?: string;
+    children?: import('svelte').Snippet;
+  };
+
+  let { variant = 'default', padding = 'md', class: className = '', children }: Props = $props();
 
   const baseClasses = 'bg-panel rounded-lg';
 

@@ -10,10 +10,19 @@
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "bundler",
-    "module": "esnext",
+    "module": "preserve",
     "target": "esnext",
     "isolatedModules": true
   },
   "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
-  "exclude": ["node_modules", ".svelte-kit", "dist", "build", "vite.config.js", "svelte.config.js", "tailwind.config.js"]
+  "exclude": [
+    "node_modules",
+    ".svelte-kit",
+    "dist",
+    "build",
+    "vite.config.js",
+    "svelte.config.js",
+    "tailwind.config.js",
+    "postcss.config.cjs"
+  ]
 }

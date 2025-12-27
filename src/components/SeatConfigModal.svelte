@@ -254,11 +254,13 @@
     </Card>
   </div>
 
-  <div slot="footer" class="flex justify-between">
-    <Button variant="ghost" onclick={handleReset}>Reset Default</Button>
-    <div class="flex gap-3">
-      <Button variant="secondary" onclick={closeSeatConfigModal}>Cancel</Button>
-      <Button variant="primary" onclick={handleApply}>Apply</Button>
+  {#snippet footer()}
+    <div class="flex justify-between w-full">
+      <Button variant="secondary" onclick={handleReset}>Reset Default</Button>
+      <div class="flex gap-3">
+        <Button variant="secondary" onclick={closeSeatConfigModal}>Cancel</Button>
+        <Button variant="primary" onclick={handleApply}>Apply</Button>
+      </div>
     </div>
-  </div>
+  {/snippet}
 </Modal>

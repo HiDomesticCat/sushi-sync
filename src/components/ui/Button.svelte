@@ -21,11 +21,11 @@
   }: Props = $props();
 
   const VARIANTS: Record<Variant, string> = {
-    primary: 'bg-sumi text-text-offwhite border-2 border-border-hinoki hover:bg-border-hinoki hover:text-bg-sumi',
-    secondary: 'bg-panel text-text-muted border border-border-hinoki/20 hover:border-border-hinoki hover:text-text-offwhite',
-    danger: 'bg-accent-salmon/10 text-accent-salmon border border-accent-salmon/50 hover:bg-accent-salmon hover:text-bg-sumi',
-    success: 'bg-accent-matcha/10 text-accent-matcha border border-accent-matcha/50 hover:bg-accent-matcha hover:text-bg-sumi',
-    ghost: 'bg-transparent text-text-muted hover:text-text-offwhite'
+    primary: 'bg-primary text-white border-2 border-primary hover:bg-primary/90 hover:border-primary/90 shadow-sm',
+    secondary: 'bg-bg-panel text-text-main border border-border hover:bg-border/20 hover:border-border shadow-sm',
+    danger: 'bg-error/10 text-error border border-error/20 hover:bg-error/20 hover:border-error/30',
+    success: 'bg-success/10 text-success border border-success/20 hover:bg-success/20 hover:border-success/30',
+    ghost: 'bg-transparent text-text-muted hover:text-text-main hover:bg-black/5'
   };
 
   const SIZES: Record<Size, string> = {
@@ -34,7 +34,6 @@
     lg: 'px-6 py-3 text-base'
   };
 
-  // Using $derived to generate classes reactively
   let classes = $derived(`
     inline-flex items-center justify-center font-mono transition-all duration-200 
     disabled:opacity-50 disabled:cursor-not-allowed

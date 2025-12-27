@@ -1,171 +1,172 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sumi: #1C1C1C;
-  --color-panel: #252525;
-  --color-hinoki: #E0D2C2;
-  --color-salmon: #FF7E67;
-  --color-matcha: #B8D086;
-  --color-ocean: #82AAFF;
-  --color-primary: #F0F0F0;
-  --color-muted: #888888;
-  --color-wasabi: #90B77D;
-  --color-umami: #D4A574;
+  /* Japanese Traditional Colors (Nippon Colors) */
+  --color-gofun: #FFFFFB; /* Gofun - Shell White */
+  --color-sumi: #1C1C1C; /* Sumi - Ink Black */
+  --color-ai: #165E83; /* Ai - Indigo */
+  --color-matcha: #B8D086; /* Matcha - Tea Green */
+  --color-sakura: #FEDFE1; /* Sakura - Cherry Blossom */
+  --color-momo: #F596AA; /* Momo - Peach */
+  --color-koucha: #98605E; /* Koucha - Reddish Brown */
+  --color-kitsune: #D39E56; /* Kitsune - Fox/Gold */
+  --color-nezumi: #949495; /* Nezumi - Mouse Grey */
+  --color-washi: #F4F1EA; /* Washi - Japanese Paper */
+  --color-hinoki: #E0D2C2; /* Hinoki - Cypress Wood */
+  
+  /* Semantic Mappings */
+  --color-bg-main: var(--color-washi);
+  --color-bg-panel: var(--color-gofun);
+  --color-text-main: var(--color-sumi);
+  --color-text-muted: var(--color-nezumi);
+  --color-border: var(--color-hinoki);
+  
+  --color-primary: var(--color-ai);
+  --color-accent: var(--color-momo);
+  --color-success: var(--color-matcha);
+  --color-warning: var(--color-kitsune);
+  --color-error: var(--color-koucha);
 }
 
 /* Japanese Pattern Classes */
 .pattern-seigaiha {
-  background-color: #252525;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23E0D2C2' fill-opacity='0.08'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-color: var(--color-bg-main);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23E0D2C2' fill-opacity='0.4'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 .pattern-asanoha {
-  background-color: #252525;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23E0D2C2' fill-opacity='0.06' d='M12 0l12 12-12 12L0 12 12 0zm0 2.83L2.83 12 12 21.17 21.17 12 12 2.83z'/%3E%3C/svg%3E");
+  background-color: var(--color-bg-panel);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23E0D2C2' fill-opacity='0.3' d='M12 0l12 12-12 12L0 12 12 0zm0 2.83L2.83 12 12 21.17 21.17 12 12 2.83z'/%3E%3C/svg%3E");
 }
 
 /* Wood Texture Background */
 .bg-wood {
   background: linear-gradient(135deg, #E0D2C2 0%, #D4C4B0 50%, #E0D2C2 100%);
+  border-bottom: 2px solid #C4B4A0;
 }
 
-/* Receipt Paper Texture */
-.bg-receipt {
-  background: linear-gradient(to bottom, #FAFAFA 0%, #F5F5F0 100%);
-}
-
-/* Torn Paper Edge Effect */
-.torn-edge-bottom::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 12px;
-  background: 
-    linear-gradient(135deg, transparent 33.33%, var(--color-sumi) 33.33%, var(--color-sumi) 66.66%, transparent 66.66%),
-    linear-gradient(225deg, transparent 33.33%, var(--color-sumi) 33.33%, var(--color-sumi) 66.66%, transparent 66.66%);
-  background-size: 8px 12px;
-  background-position: 0 0;
+/* Washi Paper Texture */
+.bg-washi {
+  background-color: var(--color-washi);
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
 /* Custom Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-hinoki) var(--color-washi);
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-sumi);
+  background: var(--color-washi);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-hinoki);
   border-radius: 4px;
+  border: 1px solid var(--color-washi);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-salmon);
+  background: var(--color-kitsune);
 }
 
 /* Typography */
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Noto Sans JP', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.6;
+  color: var(--color-text-main);
+  background-color: var(--color-bg-main);
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 /* Focus States */
 :focus-visible {
-  outline: 2px solid var(--color-ocean);
+  outline: 2px solid var(--color-ai);
   outline-offset: 2px;
 }
 
 /* Selection */
 ::selection {
-  background-color: var(--color-salmon);
-  color: var(--color-primary);
+  background-color: var(--color-momo);
+  color: var(--color-sumi);
 }
 
 /* Smooth Transitions */
 * {
-  transition-property: color, background-color, border-color, opacity, transform;
-  transition-duration: 0.15s;
-  transition-timing-function: ease-out;
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Animation Classes */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes slideIn {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.animate-pulse-slow {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* Seat Status Colors */
-.seat-vacant {
-  background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
-  border-color: var(--color-hinoki);
+/* Seat Styles */
+.seat-base {
+  background-color: var(--color-gofun);
+  border: 1px solid var(--color-hinoki);
+  box-shadow: 2px 2px 0 rgba(224, 210, 194, 0.5);
 }
 
 .seat-occupied {
-  background: linear-gradient(145deg, var(--color-salmon), #e56b58);
-  border-color: var(--color-salmon);
+  border-color: var(--color-ai);
+  box-shadow: 2px 2px 0 rgba(22, 94, 131, 0.2);
 }
 
-.seat-reserved {
-  background: linear-gradient(145deg, var(--color-ocean), #6b9bef);
-  border-color: var(--color-ocean);
+.seat-selected {
+  ring: 2px solid var(--color-ai);
+  transform: translateY(-1px);
+  box-shadow: 4px 4px 0 rgba(22, 94, 131, 0.2);
 }
 
 /* Timeline Styles */
 .timeline-track {
-  background: linear-gradient(90deg, var(--color-panel) 0%, var(--color-sumi) 100%);
+  background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .timeline-marker {
-  background: var(--color-salmon);
-  box-shadow: 0 0 8px rgba(255, 126, 103, 0.5);
+  background: var(--color-koucha);
+  box-shadow: 0 0 0 2px var(--color-gofun);
+}
+
+/* Conflict/Overlap Style */
+.conflict-stripe {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(255, 255, 255, 0.5) 5px,
+    rgba(255, 255, 255, 0.5) 10px
+  );
+  border: 2px dashed var(--color-sumi);
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0% { border-color: var(--color-sumi); }
+  50% { border-color: var(--color-koucha); }
+  100% { border-color: var(--color-sumi); }
 }
 
 /* Log Terminal Styles */
 .log-entry {
   border-left: 3px solid transparent;
   padding-left: 12px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.log-entry.arrival {
-  border-left-color: var(--color-ocean);
+.log-entry.arrival { border-left-color: var(--color-ai); }
+.log-entry.seated { border-left-color: var(--color-matcha); }
+.log-entry.left { border-left-color: var(--color-nezumi); }
+.log-entry.conflict { 
+  border-left-color: var(--color-koucha);
+  background-color: rgba(152, 96, 94, 0.1);
 }
 
-.log-entry.seated {
-  border-left-color: var(--color-matcha);
-}
-
-.log-entry.left {
-  border-left-color: var(--color-muted);
-}
-
-.log-entry.conflict {
-  border-left-color: var(--color-salmon);
-  background: rgba(255, 126, 103, 0.1);
-}

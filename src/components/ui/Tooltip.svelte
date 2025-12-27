@@ -1,9 +1,12 @@
 <script lang="ts">
-  let {
-    text,
-    position = 'top',
-    class: className = ''
-  } = $props();
+  type Props = {
+    text: string;
+    position?: 'top' | 'bottom' | 'left' | 'right';
+    class?: string;
+    children?: import('svelte').Snippet;
+  };
+
+  let { text, position = 'top', class: className = '', children }: Props = $props();
 
   let isVisible = $state(false);
   let timeoutId: ReturnType<typeof setTimeout>;

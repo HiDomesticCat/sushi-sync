@@ -92,13 +92,13 @@
 
 <Card variant="elevated" padding="md">
   <div class="flex items-center justify-between mb-4">
-    <h2 class="text-lg font-semibold text-hinoki">📊 Master Timeline</h2>
+    <h2 class="text-lg font-semibold text-text-main">📊 Master Timeline</h2>
     <div class="flex items-center gap-2">
-      <span class="text-sm text-muted">Speed:</span>
+      <span class="text-sm text-text-muted">Speed:</span>
       {#each SPEED_PRESETS as speed}
         <button
           onclick={() => setSpeed(speed)}
-          class="px-2 py-1 text-xs rounded transition-all {$playbackStore.speed === speed ? 'bg-ocean text-primary' : 'bg-panel text-muted hover:bg-hinoki hover:text-sumi'}"
+          class="px-2 py-1 text-xs rounded transition-all {$playbackStore.speed === speed ? 'bg-primary text-white' : 'bg-bg-main text-text-muted hover:bg-border hover:text-text-main'}"
         >
           {speed}x
         </button>
@@ -123,8 +123,8 @@
       <span class="font-mono text-lg text-primary">
         {formatTime($playbackStore.currentTime)}
       </span>
-      <span class="text-muted mx-2">/</span>
-      <span class="font-mono text-muted">
+      <span class="text-text-muted mx-2">/</span>
+      <span class="font-mono text-text-muted">
         {formatTime($playbackStore.maxTime)}
       </span>
     </div>
@@ -143,9 +143,9 @@
 
   <!-- Main Timeline Track -->
   <div
-    class="relative h-8 bg-sumi rounded-lg cursor-pointer overflow-hidden border border-hinoki/30"
+    class="relative h-8 bg-bg-main rounded-lg cursor-pointer overflow-hidden border border-border"
     onclick={handleTimelineClick}
-    onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e)}
+    onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e as unknown as MouseEvent)}
     role="slider"
     tabindex="0"
     aria-label="Timeline"
@@ -155,29 +155,29 @@
   >
     <!-- Progress fill -->
     <div
-      class="absolute inset-y-0 left-0 bg-ocean/30 transition-all duration-100"
+      class="absolute inset-y-0 left-0 bg-primary/20 transition-all duration-100"
       style="width: {$progressPercentage}%"
     ></div>
 
     <!-- Current time marker -->
     <div
-      class="absolute top-0 bottom-0 w-0.5 bg-salmon shadow-lg shadow-salmon/50 z-20"
+      class="absolute top-0 bottom-0 w-0.5 bg-accent shadow-lg shadow-accent/50 z-20"
       style="left: {$progressPercentage}%"
     >
-      <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-salmon rounded-full"></div>
+      <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-accent rounded-full"></div>
     </div>
 
     <!-- Time markers -->
     {#each Array(11) as _, i}
       <div
-        class="absolute top-0 h-2 w-px bg-hinoki/30"
+        class="absolute top-0 h-2 w-px bg-border"
         style="left: {i * 10}%"
       ></div>
     {/each}
   </div>
 
   <!-- Time labels -->
-  <div class="flex justify-between mt-1 text-xs text-muted">
+  <div class="flex justify-between mt-1 text-xs text-text-muted">
     {#each [0, 25, 50, 75, 100] as pct}
       <span>{formatTime($playbackStore.maxTime * pct / 100)}</span>
     {/each}
@@ -186,7 +186,7 @@
   <!-- Family Timeline Lanes -->
   {#if familyIntervals.length > 0}
     <div class="mt-6">
-      <h3 class="text-sm font-medium text-muted mb-2">Family Activity</h3>
+      <h3 class="text-sm font-medium text-text-muted mb-2">Family Activity</h3>
       <div class="space-y-2 max-h-40 overflow-y-auto">
         {#each [...new Set(familyIntervals.map(i => i.familyId))] as familyId}
           {@const intervals = familyIntervals.filter(i => i.familyId === familyId)}
@@ -194,11 +194,11 @@
           {@const isSelected = $selectionStore.selectedFamilies.includes(familyId)}
 
           <div class="flex items-center gap-2">
-            <span class="text-xs text-muted w-8">F{familyId}</span>
+            <span class="text-xs text-text-muted w-8">F{familyId}</span>
             <div
-              class="relative flex-1 h-6 bg-sumi/50 rounded cursor-pointer {isSelected ? 'ring-2 ring-ocean' : ''}"
+              class="relative flex-1 h-6 bg-bg-main rounded cursor-pointer border border-transparent {isSelected ? 'border-primary ring-1 ring-primary' : ''}"
               onclick={handleTimelineClick}
-              onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e)}
+              onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e as unknown as MouseEvent)}
               role="button"
               tabindex="0"
             >
@@ -212,6 +212,7 @@
                     onmouseleave={() => clearHover()}
                     class="absolute top-0.5 bottom-0.5 rounded transition-all hover:brightness-110"
                     style="left: {left}%; width: {Math.max(width, 1)}%; background-color: {color}; opacity: {interval.type === 'WAITING' ? 0.5 : 1}"
+                    aria-label="{interval.type} interval for family {interval.familyId} from {formatTime(interval.startTime)} to {formatTime(interval.endTime)}"
                   ></button>
                 </Tooltip>
               {/each}
@@ -223,13 +224,13 @@
   {/if}
 
   <!-- Legend -->
-  <div class="mt-4 flex gap-4 text-xs text-muted">
+  <div class="mt-4 flex gap-4 text-xs text-text-muted">
     <div class="flex items-center gap-1">
-      <div class="w-4 h-3 rounded bg-ocean/50"></div>
+      <div class="w-4 h-3 rounded bg-primary/50"></div>
       <span>Waiting</span>
     </div>
     <div class="flex items-center gap-1">
-      <div class="w-4 h-3 rounded bg-salmon"></div>
+      <div class="w-4 h-3 rounded bg-accent"></div>
       <span>Dining</span>
     </div>
   </div>

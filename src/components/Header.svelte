@@ -3,7 +3,7 @@
   import Button from './ui/Button.svelte';
   import Tooltip from './ui/Tooltip.svelte';
   import { playbackStore, formattedCurrentTime, toggle, reset } from '../stores/playback';
-  import { simulationStore, runSimulation, loadSimulationFrames, resetSimulation } from '../stores/simulation';
+  import { simulationStore, runSimulation, loadSimulationFrames, resetSimulation, isSimulationComplete, isSimulationRunning } from '../stores/simulation';
   import { customerConfigStore, seatConfigStore } from '../stores/config';
   import { setMaxTime } from '../stores/playback';
   import {
@@ -17,11 +17,11 @@
   $: currentTime = $formattedCurrentTime;
   $: hasCustomers = $customerConfigStore.length > 0;
   $: canPlay = hasCustomers;
-  $: isSimulationComplete = $simulationStore.isComplete;
-  $: isRunning = $simulationStore.isRunning;
+  $: isComplete = $isSimulationComplete;
+  $: isRunning = $isSimulationRunning;
 
   async function handlePlayPause() {
-    if (!$simulationStore.isComplete && hasCustomers) {
+    if (!$isSimulationComplete && hasCustomers) {
       // Run simulation first
       const frames = await runSimulation($seatConfigStore, $customerConfigStore);
       loadSimulationFrames(frames);
@@ -39,12 +39,12 @@
   }
 </script>
 
-<header class="fixed top-0 left-0 right-0 z-50 bg-panel border-b-2 border-hinoki shadow-lg">
+<header class="fixed top-0 left-0 right-0 z-50 bg-bg-panel border-b-2 border-border shadow-lg">
   <!-- Noren curtain decorative top -->
   <div class="h-2 bg-wood relative overflow-hidden">
     <div class="absolute inset-0 flex">
       {#each Array(16) as _, i}
-        <div class="flex-1 h-full border-r border-hinoki/20 relative">
+        <div class="flex-1 h-full border-r border-border/20 relative">
           <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-0.5 bg-sumi/50 rounded-full"></div>
         </div>
       {/each}
@@ -76,7 +76,7 @@
       <Tooltip text="Reset simulation" position="bottom">
         <button
           onclick={handleReset}
-          class="w-10 h-10 rounded-full bg-panel border-2 border-hinoki text-hinoki hover:bg-hinoki hover:text-sumi transition-all flex items-center justify-center"
+          class="w-10 h-10 rounded-full bg-bg-panel border-2 border-border text-text-muted hover:bg-border hover:text-text-main transition-all flex items-center justify-center"
           aria-label="Reset"
         >
           <RotateCcw class="w-5 h-5" />
@@ -87,33 +87,33 @@
         <button
           onclick={handlePlayPause}
           disabled={!canPlay && !isPlaying}
-          class="w-14 h-14 rounded-full bg-salmon border-4 border-salmon/30 shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          class:animate-pulse-slow={canPlay && !isPlaying && !isSimulationComplete}
+          class="w-14 h-14 rounded-full bg-accent border-4 border-accent/30 shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          class:animate-pulse-slow={canPlay && !isPlaying && !isComplete}
           aria-label={isPlaying ? 'Pause' : 'Play'}
         >
           <div class="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent"></div>
           {#if isPlaying}
-            <Pause class="w-7 h-7 text-primary" />
+            <Pause class="w-7 h-7 text-white" />
           {:else}
-            <Play class="w-7 h-7 text-primary ml-0.5" />
+            <Play class="w-7 h-7 text-white ml-0.5" />
           {/if}
         </button>
       </Tooltip>
 
       <!-- Digital Clock -->
-      <div class="bg-sumi border border-hinoki rounded-lg px-3 py-1.5 font-mono text-base text-matcha shadow-inner min-w-[100px] text-center">
+      <div class="bg-sumi border border-border rounded-lg px-3 py-1.5 font-mono text-base text-matcha shadow-inner min-w-[100px] text-center">
         {currentTime}
       </div>
     </div>
 
-    <!-- Right Section - Export -->
+    <!-- Right Section - Export (Duplicate, but useful) -->
     <div class="flex items-center gap-2">
       <Tooltip text="Export simulation data" position="bottom">
         <Button
           variant="secondary"
           size="sm"
           onclick={openExportModal}
-          disabled={!isSimulationComplete}
+          disabled={!isComplete}
         >
           <FileText class="w-4 h-4 mr-1.5" />
           Export
@@ -123,15 +123,15 @@
   </div>
 
   <!-- Status bar -->
-  <div class="h-1 bg-sumi relative overflow-hidden">
+  <div class="h-1 bg-bg-main relative overflow-hidden">
     {#if isRunning}
-      <div class="absolute inset-0 bg-gradient-to-r from-ocean via-matcha to-ocean animate-pulse"></div>
-    {:else if isSimulationComplete}
-      <div class="absolute inset-0 bg-matcha"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-primary via-success to-primary animate-pulse"></div>
+    {:else if isComplete}
+      <div class="absolute inset-0 bg-success"></div>
     {:else if hasCustomers}
-      <div class="absolute inset-0 bg-ocean/50"></div>
+      <div class="absolute inset-0 bg-primary/50"></div>
     {:else}
-      <div class="absolute inset-0 bg-salmon/30"></div>
+      <div class="absolute inset-0 bg-accent/30"></div>
     {/if}
   </div>
 </header>

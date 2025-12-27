@@ -26,14 +26,14 @@
 
   const selectId = `select-${Math.random().toString(36).substr(2, 9)}`;
 
-  const baseClasses = 'w-full px-4 py-2 bg-sumi border-2 border-hinoki rounded-lg text-primary appearance-none cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ocean focus:border-ocean disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseClasses = 'w-full px-4 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main appearance-none cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed';
 </script>
 
 <div class="space-y-1">
   {#if label}
-    <label for={selectId} class="block text-sm font-medium text-primary">
+    <label for={selectId} class="block text-sm font-medium text-text-main">
       {label}
-      {#if required}<span class="text-salmon ml-1">*</span>{/if}
+      {#if required}<span class="text-accent ml-1">*</span>{/if}
     </label>
   {/if}
 
