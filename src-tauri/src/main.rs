@@ -11,7 +11,7 @@ fn main() {
         .plugin(tauri_plugin_opener::init()) // Keep if you use opener
         .invoke_handler(tauri::generate_handler![
             simulation::start_simulation,
-            simulation::generate_customers
+            simulation::load_customers
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

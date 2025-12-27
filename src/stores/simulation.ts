@@ -1,6 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
-import type { SimulationFrame } from '../types';
+import type { SimulationFrame, CustomerConfig } from '../types';
+import { customerConfigStore } from './config';
 
 interface SimulationState {
   frames: SimulationFrame[];
@@ -115,26 +116,40 @@ export const simulationStats = derived(simulationStore, ($store) => {
 // Helper functions for Header.svelte
 export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
   // Convert configs to CSV format for Rust backend
-  // The CSV header must match what src-tauri/src/parser.rs expects
+  // The CSV header must match what src-tauri/src/parser.rs expects:
+  // id, arrival_time, type (skipped), party_size, baby_chair_count, wheelchair_count, est_dining_time
   let csvContent = "id,arrival_time,type,party_size,baby_chair_count,wheelchair_count,est_dining_time\n";
   
   customerConfig.forEach(customer => {
-    csvContent += `${customer.id},${customer.arrivalTime},${customer.type},${customer.partySize},${customer.babyChairCount},${customer.wheelchairCount},${customer.estimatedDiningTime}\n`;
+    // Note: 'type' is at index 2 and is skipped by the Rust parser, but we include a placeholder
+    csvContent += `${customer.id},${customer.arrivalTime},${customer.type},${customer.partySize},${customer.babyChairCount},${customer.wheelchairCount},${customer.estDiningTime}\n`;
   });
   
   console.log("Sending CSV to Rust:", csvContent);
   
   simulationStore.update(s => ({ ...s, loading: true, error: null }));
   try {
-    // Pass seatConfig as JSON string
+    // Step A: Load customer data into store first
+    const customers = await invoke<any[]>('load_customers', { csvContent });
+    const mappedCustomers: CustomerConfig[] = customers.map(c => ({
+      id: c.id,
+      familyId: c.family_id,
+      arrivalTime: c.arrival_time,
+      type: c.type,
+      partySize: c.party_size,
+      babyChairCount: c.baby_chair_count,
+      wheelchairCount: c.wheelchair_count,
+      estDiningTime: c.est_dining_time
+    }));
+    customerConfigStore.set(mappedCustomers);
+
+    // Step B: Start simulation
     const seatConfigJson = JSON.stringify(seatConfig);
     const frames = await invoke<SimulationFrame[]>('start_simulation', { csvContent, seatConfigJson });
     console.log("Rust simulation finished, frames:", frames.length);
     
     if (frames.length > 0) {
       loadSimulationFrames(frames);
-    } else {
-      console.warn("Rust returned 0 frames");
     }
     
     return frames;
@@ -187,8 +202,30 @@ export const actions = {
   startSimulation: async (csvContent: string, seatConfig: any[]) => {
     simulationStore.update(s => ({ ...s, loading: true, error: null }));
     try {
+      // Step A: Load customer data into store first
+      // This ensures getCustomerInfo in components can find the data
+      console.log("Loading customers...");
+      const customers = await invoke<any[]>('load_customers', { csvContent });
+      
+      // Map Rust snake_case to Frontend camelCase
+      const mappedCustomers: CustomerConfig[] = customers.map(c => ({
+        id: c.id,
+        familyId: c.family_id,
+        arrivalTime: c.arrival_time,
+        type: c.type,
+        partySize: c.party_size,
+        babyChairCount: c.baby_chair_count,
+        wheelchairCount: c.wheelchair_count,
+        estDiningTime: c.est_dining_time
+      }));
+      
+      customerConfigStore.set(mappedCustomers);
+
+      // Step B: Start simulation
+      console.log("Starting simulation...");
       const seatConfigJson = JSON.stringify(seatConfig);
       const frames = await invoke<SimulationFrame[]>('start_simulation', { csvContent, seatConfigJson });
+      
       console.log("Rust simulation finished, frames:", frames.length);
       if (frames.length > 0) {
         simulationStore.update(s => ({
@@ -203,6 +240,7 @@ export const actions = {
     } catch (err) {
       console.error("Simulation failed:", err);
       simulationStore.update(s => ({ ...s, loading: false, error: String(err) }));
+      alert("Error: " + String(err));
     }
   },
   setFrameIndex: (index: number) => {

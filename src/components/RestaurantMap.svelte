@@ -180,8 +180,9 @@
         <div class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">Waiting Area</div>
         <div class="flex flex-wrap gap-2">
           {#each waitingQueue as customer}
+            {@const color = familyColors.get(customer.familyId) || '#cbd5e1'}
             <div class="px-3 py-1.5 bg-white border-2 border-dashed border-slate-300 rounded-lg text-xs font-mono text-slate-500 flex items-center gap-2">
-               <div class="w-2 h-2 rounded-full" style="background-color: {customer.color}"></div>
+               <div class="w-2 h-2 rounded-full" style="background-color: {color}"></div>
                F{customer.familyId}
             </div>
           {/each}
