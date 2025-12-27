@@ -139,7 +139,9 @@
                 <!-- 有人坐時顯示圓球 -->
                 {#if seat.occupiedBy && customer}
                   <div class="absolute bottom-0 right-0 z-10">
-                    <button type="button" class="bg-blue-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:bg-blue-600 transition-colors"
+                    <div class="bg-blue-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:bg-blue-600 transition-colors"
+                           role="button"
+                           tabindex="0"
                            onclick={(e) => {
                              e.stopPropagation();
                              selectFamily(seat.occupiedBy!, false);
@@ -147,12 +149,13 @@
                            onkeydown={(e) => {
                              if (e.key === 'Enter' || e.key === ' ') {
                                e.preventDefault();
+                               e.stopPropagation();
                                selectFamily(seat.occupiedBy!, false);
                              }
                            }}
                            title={`Family ${customer.familyId} (${customer.partySize} ppl)${customer.wheelchairCount > 0 ? ' - Wheelchair: ' + customer.wheelchairCount : ''}${customer.babyChairCount > 0 ? ' - Baby Chair: ' + customer.babyChairCount : ''}`}>
                       {customer.familyId}
-                    </button>
+                    </div>
                   </div>
                 {/if}
 

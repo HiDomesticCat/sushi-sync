@@ -1,9 +1,9 @@
-use crate::models::{CustomerConfig, SeatConfig, SimulationFrame, SimulationEvent, Seat};
+use crate::models::{CustomerConfig, SeatConfig, SimulationFrame, Seat};
 use crate::parser;
 use crate::errors::{AppError, Result};
 use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 // 常數設定
 const DEFAULT_BABY_CHAIRS: i32 = 4;
@@ -25,6 +25,7 @@ struct SeatState {
 struct SimEvent {
     time: u64,
     family_id: u32,
+    #[allow(dead_code)]
     customer_id: u32,
     action: Action,
     log_message: String,
@@ -35,6 +36,7 @@ enum Action {
     Arrive,
     Sit(String),
     Leave(String),
+    #[allow(dead_code)]
     Error(String),
 }
 
@@ -78,7 +80,7 @@ pub fn start_simulation(csv_content: String, seat_config_json: String) -> Result
             }
 
             // 2. Wait & Allocate
-            let mut seated_seat_ids: Vec<String> = Vec::new();
+            let seated_seat_ids: Vec<String>;
             let mut res = lock.lock().unwrap();
             
             loop {
@@ -147,6 +149,24 @@ pub fn start_simulation(csv_content: String, seat_config_json: String) -> Result
     for h in handles { let _ = h.join(); }
 
     generate_frames(monitor, &seats_config)
+}
+
+#[tauri::command]
+pub fn generate_customers(count: u32) -> Vec<CustomerConfig> {
+    let mut customers = Vec::new();
+    for i in 1..=count {
+        customers.push(CustomerConfig {
+            id: i,
+            family_id: i,
+            arrival_time: i as u64 * 5,
+            type_: "FAMILY".to_string(),
+            party_size: 2,
+            baby_chair_count: 0,
+            wheelchair_count: 0,
+            est_dining_time: 30,
+        });
+    }
+    customers
 }
 
 fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<String>> {
