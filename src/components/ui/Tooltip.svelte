@@ -9,7 +9,7 @@
   let { text, position = 'top', class: className = '', children }: Props = $props();
 
   let isVisible = $state(false);
-  let timeoutId: ReturnType<typeof setTimeout>;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   let triggerEl = $state<HTMLDivElement>();
   let tooltipEl = $state<HTMLDivElement>();
   let coords = $state({ top: 0, left: 0 });
@@ -19,6 +19,9 @@
     
     const triggerRect = triggerEl.getBoundingClientRect();
     const tooltipRect = tooltipEl.getBoundingClientRect();
+    
+    console.log("Tooltip: triggerRect", triggerRect);
+    console.log("Tooltip: tooltipRect", tooltipRect);
     
     let top = 0;
     let left = 0;
@@ -53,24 +56,28 @@
 
   function showTooltip() {
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      isVisible = true;
-    }, 300);
+    isVisible = true;
+    console.log("Tooltip: showTooltip triggered for", text);
   }
 
   function hideTooltip() {
     clearTimeout(timeoutId);
     isVisible = false;
+    console.log("Tooltip: hideTooltip triggered");
   }
 
   $effect(() => {
     if (isVisible && tooltipEl && triggerEl) {
       updatePosition();
       
+      // Use a small interval to ensure position is correct as elements might move
+      const interval = setInterval(updatePosition, 100);
+      
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
       
       return () => {
+        clearInterval(interval);
         window.removeEventListener('scroll', updatePosition, true);
         window.removeEventListener('resize', updatePosition);
       };
@@ -85,6 +92,7 @@
   onmouseleave={hideTooltip}
   role="button"
   tabindex="0"
+  style="pointer-events: auto;"
 >
   {@render children?.()}
 </div>
@@ -92,8 +100,8 @@
 {#if isVisible}
   <div
     bind:this={tooltipEl}
-    class="fixed z-[9999] px-3 py-2 text-sm text-white bg-sumi/90 border border-hinoki rounded-lg shadow-lg whitespace-nowrap pointer-events-none animate-fade-in backdrop-blur-sm"
-    style="top: {coords.top}px; left: {coords.left}px;"
+    class="fixed z-[10000] px-3 py-2 text-sm text-white bg-sumi border border-hinoki rounded-lg shadow-2xl whitespace-nowrap pointer-events-none animate-fade-in backdrop-blur-md"
+    style="top: {coords.top}px; left: {coords.left}px; visibility: {coords.top === 0 && coords.left === 0 ? 'hidden' : 'visible'};"
     role="tooltip"
   >
     {text}

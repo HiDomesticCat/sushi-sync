@@ -43,6 +43,7 @@
       partySize: partySize,
       babyChairCount: babyChairCount,
       wheelchairCount: wheelchairCount,
+      estDiningTime: diningTime,
       estimatedDiningTime: diningTime
     };
     addCustomer(newCustomer);
@@ -99,19 +100,19 @@
 
   function addSampleData() {
     const samples: CustomerConfig[] = [
-      { id: 1, familyId: 1, arrivalTime: 0, type: 'INDIVIDUAL', partySize: 1, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 20 },
-      { id: 2, familyId: 2, arrivalTime: 5, type: 'FAMILY', partySize: 4, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 45 },
-      { id: 3, familyId: 3, arrivalTime: 10, type: 'WITH_BABY', partySize: 3, babyChairCount: 1, wheelchairCount: 0, estimatedDiningTime: 40 },
-      { id: 4, familyId: 4, arrivalTime: 15, type: 'INDIVIDUAL', partySize: 2, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 25 },
-      { id: 5, familyId: 5, arrivalTime: 20, type: 'WHEELCHAIR', partySize: 1, babyChairCount: 0, wheelchairCount: 1, estimatedDiningTime: 35 },
-      { id: 6, familyId: 6, arrivalTime: 25, type: 'FAMILY', partySize: 6, babyChairCount: 1, wheelchairCount: 0, estimatedDiningTime: 50 },
-      { id: 7, familyId: 7, arrivalTime: 30, type: 'WITH_BABY', partySize: 1, babyChairCount: 2, wheelchairCount: 0, estimatedDiningTime: 40 }, // 1 Adult + 2 Babies
-      { id: 8, familyId: 8, arrivalTime: 35, type: 'FAMILY', partySize: 3, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 40 },
+      { id: 1, familyId: 1, arrivalTime: 0, type: 'INDIVIDUAL', partySize: 1, babyChairCount: 0, wheelchairCount: 0, estDiningTime: 20, estimatedDiningTime: 20 },
+      { id: 2, familyId: 2, arrivalTime: 5, type: 'FAMILY', partySize: 4, babyChairCount: 0, wheelchairCount: 0, estDiningTime: 45, estimatedDiningTime: 45 },
+      { id: 3, familyId: 3, arrivalTime: 10, type: 'WITH_BABY', partySize: 3, babyChairCount: 1, wheelchairCount: 0, estDiningTime: 40, estimatedDiningTime: 40 },
+      { id: 4, familyId: 4, arrivalTime: 15, type: 'INDIVIDUAL', partySize: 2, babyChairCount: 0, wheelchairCount: 0, estDiningTime: 25, estimatedDiningTime: 25 },
+      { id: 5, familyId: 5, arrivalTime: 20, type: 'WHEELCHAIR', partySize: 1, babyChairCount: 0, wheelchairCount: 1, estDiningTime: 35, estimatedDiningTime: 35 },
+      { id: 6, familyId: 6, arrivalTime: 25, type: 'FAMILY', partySize: 6, babyChairCount: 1, wheelchairCount: 0, estDiningTime: 50, estimatedDiningTime: 50 },
+      { id: 7, familyId: 7, arrivalTime: 30, type: 'WITH_BABY', partySize: 1, babyChairCount: 2, wheelchairCount: 0, estDiningTime: 40, estimatedDiningTime: 40 },
+      { id: 8, familyId: 8, arrivalTime: 35, type: 'FAMILY', partySize: 3, babyChairCount: 0, wheelchairCount: 0, estDiningTime: 40, estimatedDiningTime: 40 },
     ];
     customerConfigStore.set(samples);
   }
 
-  function getTypeIcon(type: CustomerType): string {
+  function getTypeIcon(type: string): string {
     switch (type) {
       case 'INDIVIDUAL': return '👤';
       case 'FAMILY': return '👨‍👩‍👧';
@@ -253,7 +254,7 @@
                   </td>
                   <td class="py-2 px-2">{customer.arrivalTime}s</td>
                   <td class="py-2 px-2">{customer.partySize}</td>
-                  <td class="py-2 px-2">{customer.estimatedDiningTime}m</td>
+                  <td class="py-2 px-2">{customer.estDiningTime}m</td>
                   <td class="py-2 px-2">
                     {#if customer.babyChairCount > 0}<Badge variant="info" size="sm">👶 {customer.babyChairCount}</Badge>{/if}
                     {#if customer.wheelchairCount > 0}<Badge variant="waiting" size="sm">♿ {customer.wheelchairCount}</Badge>{/if}

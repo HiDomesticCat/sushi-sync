@@ -7,6 +7,8 @@ export interface SeatConfig {
   label?: string;
 }
 
+export type CustomerType = 'INDIVIDUAL' | 'FAMILY' | 'WITH_BABY' | 'WHEELCHAIR' | 'LARGE_GROUP';
+
 export interface CustomerConfig {
   id: number;
   familyId: number;      // Maps to rust: family_id
@@ -19,13 +21,14 @@ export interface CustomerConfig {
   wheelchairCount: number;
   
   estDiningTime: number;
+  estimatedDiningTime: number; // Keep both for compatibility
 }
 
 export interface Seat {
   id: string;
   type: string;
   occupiedBy: number | null; // Stores Family ID
-  isBabyChairAttached: boolean;
+  babyChairCount: number;
   isWheelchairAccessible: boolean;
 }
 

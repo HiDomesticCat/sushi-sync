@@ -1,7 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import type { SimulationFrame, CustomerConfig } from '../types';
-import { customerConfigStore } from './config';
+import { customerConfigStore, seatConfigStore } from './config';
 
 interface SimulationState {
   frames: SimulationFrame[];
@@ -24,21 +24,17 @@ export const simulationStore = writable<SimulationState>(initialState);
 export const isSimulationComplete = derived(simulationStore, $s => $s.frames.length > 0);
 export const isSimulationRunning = derived(simulationStore, $s => $s.isPlaying);
 
-// 1. Current Frame (for Visualization)
 export const currentFrame = derived(simulationStore, ($store) => {
   if ($store.frames.length === 0) return null;
   return $store.frames[$store.currentFrameIndex];
 });
 
-// 2. All Events (Derived for ExportModal)
 export const allEvents = derived(simulationStore, ($store) => {
   if ($store.frames.length === 0) return [];
-  // Use the last frame's logs as the full history
   const lastFrame = $store.frames[$store.frames.length - 1];
   return lastFrame ? lastFrame.events : [];
 });
 
-// 3. Stats (Derived for ExportModal)
 export const simulationStats = derived(simulationStore, ($store) => {
   const frames = $store.frames;
   if (frames.length === 0) {
@@ -56,17 +52,11 @@ export const simulationStats = derived(simulationStore, ($store) => {
     };
   }
   
-  // Calculate statistics from frames
   const lastFrame = frames[frames.length - 1];
   const events = lastFrame?.events || [];
-  
-  // Calculate duration from the last frame's timestamp
   const duration = lastFrame?.timestamp || 0;
-  
-  // Count conflicts
   const totalConflicts = events.filter(e => e.type === 'CONFLICT').length;
   
-  // Find max waiting customers (this would need to be tracked in frames)
   let maxWaitingCustomers = 0;
   frames.forEach(frame => {
     if (frame.waitingQueue && frame.waitingQueue.length > maxWaitingCustomers) {
@@ -74,7 +64,6 @@ export const simulationStats = derived(simulationStore, ($store) => {
     }
   });
   
-  // Calculate seat utilization (average over all frames)
   let totalSeatFrames = 0;
   let occupiedSeatFrames = 0;
   
@@ -87,22 +76,20 @@ export const simulationStats = derived(simulationStore, ($store) => {
   
   const seatUtilization = totalSeatFrames > 0 ? (occupiedSeatFrames / totalSeatFrames) * 100 : 0;
   
-  // Calculate average wait time (simplified)
   let totalWaitTime = 0;
   let seatedCustomers = 0;
   events.forEach(event => {
     if (event.type === 'SEATED') {
       seatedCustomers++;
-      // This is a simplification - actual wait time would need to be tracked
       totalWaitTime += event.timestamp;
     }
   });
   const averageWaitTime = seatedCustomers > 0 ? totalWaitTime / seatedCustomers : 0;
   
   return {
-    totalCustomers: 0, // This should be calculated from customer data
+    totalCustomers: 0,
     averageWaitTime,
-    averageDiningTime: 0, // This would need to be tracked in frames
+    averageDiningTime: 0,
     tableUtilization: seatUtilization,
     totalFrames: frames.length,
     totalEvents: events.length,
@@ -113,49 +100,60 @@ export const simulationStats = derived(simulationStore, ($store) => {
   };
 });
 
-// Helper functions for Header.svelte
 export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
-  // Convert configs to CSV format for Rust backend
-  // The CSV header must match what src-tauri/src/parser.rs expects:
-  // id, arrival_time, type (skipped), party_size, baby_chair_count, wheelchair_count, est_dining_time
+  // CSV format: id, arrival_time, type, party_size, baby_chair_count, wheelchair_count, est_dining_time
   let csvContent = "id,arrival_time,type,party_size,baby_chair_count,wheelchair_count,est_dining_time\n";
   
   customerConfig.forEach(customer => {
-    // Note: 'type' is at index 2 and is skipped by the Rust parser, but we include a placeholder
-    csvContent += `${customer.id},${customer.arrivalTime},${customer.type},${customer.partySize},${customer.babyChairCount},${customer.wheelchairCount},${customer.estDiningTime}\n`;
+    const diningTime = customer.estimatedDiningTime || customer.estDiningTime || 60;
+    const id = customer.id || 0;
+    const arrival = customer.arrivalTime || 0;
+    const type = customer.type || 'INDIVIDUAL';
+    const size = customer.partySize || 1;
+    const baby = customer.babyChairCount || 0;
+    const wheel = customer.wheelchairCount || 0;
+    
+    csvContent += `${id},${arrival},${type},${size},${baby},${wheel},${diningTime}\n`;
   });
   
-  console.log("Sending CSV to Rust:", csvContent);
+  console.log("runSimulation: Sending CSV to Rust:", csvContent);
   
   simulationStore.update(s => ({ ...s, loading: true, error: null }));
   try {
-    // Step A: Load customer data into store first
+    // 1. Load customers into store
+    console.log("runSimulation: Loading customers...");
     const customers = await invoke<any[]>('load_customers', { csvContent });
+    console.log("runSimulation: load_customers returned:", customers);
+    
     const mappedCustomers: CustomerConfig[] = customers.map(c => ({
-      id: c.id,
-      familyId: c.family_id,
-      arrivalTime: c.arrival_time,
-      type: c.type,
-      partySize: c.party_size,
-      babyChairCount: c.baby_chair_count,
-      wheelchairCount: c.wheelchair_count,
-      estDiningTime: c.est_dining_time
+      id: Number(c.id),
+      familyId: Number(c.family_id),
+      arrivalTime: Number(c.arrival_time),
+      type: String(c.type_),
+      partySize: Number(c.party_size),
+      babyChairCount: Number(c.baby_chair_count),
+      wheelchairCount: Number(c.wheelchair_count),
+      estimatedDiningTime: Number(c.est_dining_time),
+      estDiningTime: Number(c.est_dining_time)
     }));
     customerConfigStore.set(mappedCustomers);
 
-    // Step B: Start simulation
+    // 2. Run simulation
+    console.log("runSimulation: Starting simulation...");
     const seatConfigJson = JSON.stringify(seatConfig);
     const frames = await invoke<SimulationFrame[]>('start_simulation', { csvContent, seatConfigJson });
-    console.log("Rust simulation finished, frames:", frames.length);
     
+    console.log("runSimulation: Rust returned", frames.length, "frames");
     if (frames.length > 0) {
       loadSimulationFrames(frames);
     }
     
     return frames;
   } catch (err) {
-    console.error("Simulation failed:", err);
-    simulationStore.update(s => ({ ...s, loading: false, error: String(err) }));
+    console.error("runSimulation: Simulation failed:", err);
+    const errorMsg = String(err);
+    simulationStore.update(s => ({ ...s, loading: false, error: errorMsg }));
+    alert("Simulation Error: " + errorMsg);
     return [];
   }
 }
@@ -184,9 +182,7 @@ export function getFrameAtTime(timestamp: number) {
   const store = get(simulationStore);
   if (store.frames.length === 0) return null;
   
-  // Find the frame that is closest to the timestamp without exceeding it
   let bestFrame = store.frames[0];
-  
   for (let i = 0; i < store.frames.length; i++) {
     if (store.frames[i].timestamp <= timestamp) {
       bestFrame = store.frames[i];
@@ -194,7 +190,6 @@ export function getFrameAtTime(timestamp: number) {
       break;
     }
   }
-  
   return bestFrame;
 }
 
@@ -202,43 +197,37 @@ export const actions = {
   startSimulation: async (csvContent: string, seatConfig: any[]) => {
     simulationStore.update(s => ({ ...s, loading: true, error: null }));
     try {
-      // Step A: Load customer data into store first
-      // This ensures getCustomerInfo in components can find the data
-      console.log("Loading customers...");
+      const seatConfigJson = JSON.stringify(seatConfig);
+
+      // 1. Load customers
+      console.log("actions.startSimulation: Loading customers...");
       const customers = await invoke<any[]>('load_customers', { csvContent });
-      
-      // Map Rust snake_case to Frontend camelCase
       const mappedCustomers: CustomerConfig[] = customers.map(c => ({
-        id: c.id,
-        familyId: c.family_id,
-        arrivalTime: c.arrival_time,
-        type: c.type,
-        partySize: c.party_size,
-        babyChairCount: c.baby_chair_count,
-        wheelchairCount: c.wheelchair_count,
-        estDiningTime: c.est_dining_time
+        id: Number(c.id),
+        familyId: Number(c.family_id),
+        arrivalTime: Number(c.arrival_time),
+        type: String(c.type_),
+        partySize: Number(c.party_size),
+        babyChairCount: Number(c.baby_chair_count),
+        wheelchairCount: Number(c.wheelchair_count),
+        estDiningTime: Number(c.est_dining_time),
+        estimatedDiningTime: Number(c.est_dining_time)
       }));
-      
       customerConfigStore.set(mappedCustomers);
 
-      // Step B: Start simulation
-      console.log("Starting simulation...");
-      const seatConfigJson = JSON.stringify(seatConfig);
+      // 2. Run simulation
+      console.log("actions.startSimulation: Calling Rust start_simulation via actions...");
       const frames = await invoke<SimulationFrame[]>('start_simulation', { csvContent, seatConfigJson });
       
-      console.log("Rust simulation finished, frames:", frames.length);
-      if (frames.length > 0) {
-        simulationStore.update(s => ({
-          ...s,
-          frames: frames,
-          currentFrameIndex: 0,
-          loading: false
-        }));
-      } else {
-        simulationStore.update(s => ({ ...s, loading: false }));
-      }
+      console.log("actions.startSimulation: Rust returned", frames.length, "frames");
+      simulationStore.update(s => ({
+        ...s,
+        frames: frames,
+        currentFrameIndex: 0,
+        loading: false
+      }));
     } catch (err) {
-      console.error("Simulation failed:", err);
+      console.error("actions.startSimulation: Simulation failed:", err);
       simulationStore.update(s => ({ ...s, loading: false, error: String(err) }));
       alert("Error: " + String(err));
     }

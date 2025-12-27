@@ -22,14 +22,23 @@
 
   async function handlePlayPause() {
     if (!$isSimulationComplete && hasCustomers) {
+      console.log("Header: Starting simulation...");
       // Run simulation first
       const frames = await runSimulation($seatConfigStore, $customerConfigStore);
       
-      // Set max time based on simulation
-      const maxTime = frames.length > 0 ? frames[frames.length - 1].timestamp : 100;
-      setMaxTime(maxTime);
+      if (frames && frames.length > 0) {
+        console.log("Header: Simulation successful, frames received:", frames.length);
+        // Set max time based on simulation
+        const maxTime = frames[frames.length - 1].timestamp;
+        setMaxTime(maxTime);
+        toggle();
+      } else {
+        console.error("Header: Simulation failed or returned no frames");
+        // The alert is now handled inside runSimulation with more detail
+      }
+    } else {
+      toggle();
     }
-    toggle();
   }
 
   function handleReset() {

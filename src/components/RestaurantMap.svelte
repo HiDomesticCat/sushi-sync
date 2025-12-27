@@ -2,7 +2,6 @@
   import { Users, Baby, Accessibility, User } from 'lucide-svelte';
   import Card from './ui/Card.svelte';
   import Badge from './ui/Badge.svelte';
-  import Tooltip from './ui/Tooltip.svelte';
   import { seatConfigStore, generateCustomerColors, customerConfigStore } from '../stores/config';
   import { simulationStore, getFrameAtTime } from '../stores/simulation';
   import { playbackStore } from '../stores/playback';
@@ -20,8 +19,8 @@
     const dynamicSeat = currentFrame?.seats.find(s => s.id === config.id);
     return {
       ...config,
-      occupiedBy: dynamicSeat?.occupiedBy || null,
-      isBabyChairAttached: dynamicSeat?.isBabyChairAttached || false
+      occupiedBy: dynamicSeat?.occupiedBy ?? null,
+      babyChairCount: dynamicSeat?.babyChairCount ?? 0
     };
   })) as Seat[];
 
@@ -54,8 +53,9 @@
     if (!seat.occupiedBy) return false;
     const customer = getCustomerInfo(seat.occupiedBy);
     // If occupied, fill slots based on partySize
-    // e.g., if 3 people sit at a 4P table, light up 3 slots
-    return customer ? index < customer.partySize : true;
+    // For families with babies, we also count the babies as needing slots
+    const totalPeople = customer ? (customer.partySize + customer.babyChairCount) : 1;
+    return index < totalPeople;
   }
 
 </script>
@@ -94,7 +94,7 @@
               
               <button
                 onclick={(e) => {
-                  // Clicking a seat always selects it
+                  // 點擊座位總是選擇座位
                   selectSeat(seat.id, e.ctrlKey);
                 }}
                 onmouseenter={() => setHoveredSeat(seat.id)}
@@ -112,8 +112,27 @@
                        class:grid-cols-3={seatType === '6P'}>
                     
                     {#each Array(subSlots) as _, idx}
-                      <div class="rounded-md transition-all duration-500 border border-black/5"
+                      <div class="relative rounded-md transition-all duration-500 border border-black/5"
                            style="background-color: {isSubSlotFilled(seat, idx) ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.03)'}">
+                        
+                        {#if isSubSlotFilled(seat, idx) && customer}
+                          <!-- Wheelchair icon inside sub-slot -->
+                          {#if customer.wheelchairCount > 0 && idx === 0}
+                            <div class="absolute inset-0 flex items-center justify-center">
+                              <Accessibility class="w-4 h-4 text-white/80" />
+                            </div>
+                          {/if}
+
+                          <!-- Baby chair bubble on sub-slot -->
+                          {#if customer.babyChairCount > 0 && idx < customer.babyChairCount}
+                            <div class="absolute -top-1 -right-1 z-[100]">
+                              <div class="bg-pink-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm border border-white"
+                                   title={`Baby Chair (Total: ${customer.babyChairCount})`}>
+                                <Baby class="w-2 h-2" />
+                              </div>
+                            </div>
+                          {/if}
+                        {/if}
                       </div>
                     {/each}
                   </div>
@@ -121,14 +140,16 @@
 
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                   {#if seat.occupiedBy && customer}
-                      {#if customer.wheelchairCount > 0}
-                         <Accessibility class="w-8 h-8 text-white drop-shadow-md animate-pulse" />
-                      {:else}
-                         {#if customer.partySize > 1}
-                           <Users class="w-8 h-8 text-white drop-shadow-md" />
-                         {:else}
-                           <User class="w-6 h-6 text-white drop-shadow-md" />
-                         {/if}
+                      {#if seatType === 'SINGLE'}
+                        {#if customer.wheelchairCount > 0}
+                           <Accessibility class="w-8 h-8 text-white drop-shadow-md animate-pulse" />
+                        {:else}
+                           {#if customer.partySize > 1}
+                             <Users class="w-8 h-8 text-white drop-shadow-md" />
+                           {:else}
+                             <User class="w-6 h-6 text-white drop-shadow-md" />
+                           {/if}
+                        {/if}
                       {/if}
                   {:else}
                       <span class="text-xs font-mono font-bold text-slate-300">{seat.id}</span>
@@ -136,11 +157,12 @@
                 </div>
 
                 <!-- Show family ID bubble when occupied -->
-                {#if seat.occupiedBy && customer}
-                  <div class="absolute bottom-0 right-0 z-10">
+                {#if seat.occupiedBy}
+                  <div class="absolute bottom-0 right-0 z-[100]">
                     <div class="bg-blue-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:bg-blue-600 transition-colors"
                            role="button"
                            tabindex="0"
+                           title={customer ? `Family #${seat.occupiedBy} | Size: ${customer.partySize} | Baby: ${customer.babyChairCount} | Wheel: ${customer.wheelchairCount} | Time: ${customer.estDiningTime}m` : `Family #${seat.occupiedBy}`}
                            onclick={(e) => {
                              e.stopPropagation();
                              selectFamily(seat.occupiedBy!, false);
@@ -151,20 +173,20 @@
                                e.stopPropagation();
                                selectFamily(seat.occupiedBy!, false);
                              }
-                           }}
-                           title={`Family ${customer.familyId} (${customer.partySize} ppl)${customer.wheelchairCount > 0 ? ' - Wheelchair: ' + customer.wheelchairCount : ''}${customer.babyChairCount > 0 ? ' - Baby Chair: ' + customer.babyChairCount : ''}`}>
-                      {customer.familyId}
+                           }}>
+                        {seat.occupiedBy}
                     </div>
                   </div>
                 {/if}
 
               </button>
 
-              {#if customer && customer.babyChairCount > 0}
-                <div class="absolute -top-2 -right-2 z-10 animate-bounce-slow">
-                  <div class="bg-pink-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+              {#if seatType === 'SINGLE' && seat.babyChairCount > 0}
+                <div class="absolute -top-2 -right-2 z-[100]">
+                  <div class="bg-pink-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                       title={`Baby Chairs: ${seat.babyChairCount}`}>
                     <Baby class="w-3 h-3 mr-0.5" />
-                    {customer.babyChairCount}
+                    {seat.babyChairCount}
                   </div>
                 </div>
               {/if}

@@ -4,6 +4,7 @@ use crate::errors::{AppError, Result};
 use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
 use std::time::Duration;
+use std::collections::HashMap;
 
 // Constants
 const DEFAULT_BABY_CHAIRS: i32 = 4;
@@ -46,13 +47,27 @@ pub fn load_customers(csv_content: String) -> Result<Vec<CustomerConfig>> {
 
 #[tauri::command]
 pub fn start_simulation(csv_content: String, seat_config_json: String) -> Result<Vec<SimulationFrame>> {
+    println!("Rust: start_simulation called with CSV length: {}", csv_content.len());
     let customers = parser::parse_customers(&csv_content)
-        .map_err(|e| AppError::CsvParseError(e.to_string()))?;
+        .map_err(|e| {
+            println!("Rust: CSV Parse Error: {}", e);
+            AppError::CsvParseError(e.to_string())
+        })?;
+    
+    println!("Rust: Parsed {} customers", customers.len());
     
     let seats_config: Vec<SeatConfig> = serde_json::from_str(&seat_config_json)
-        .map_err(|e| AppError::JsonParseError(e.to_string()))?;
+        .map_err(|e| {
+            println!("Rust: JSON Parse Error: {}", e);
+            AppError::JsonParseError(e.to_string())
+        })?;
 
-    if customers.is_empty() { return Ok(Vec::new()); }
+    println!("Rust: Parsed {} seats", seats_config.len());
+
+    if customers.is_empty() { 
+        println!("Rust: No customers to simulate");
+        return Ok(Vec::new()); 
+    }
 
     let initial_resources = SushiResources {
         baby_chairs_available: DEFAULT_BABY_CHAIRS,
@@ -156,27 +171,27 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
         return None;
     }
 
-    let required = customer.party_size as usize;
-
+    // Wheelchair logic: must sit in sofa (4P/6P)
     if customer.wheelchair_count > 0 {
-        let seats: Vec<String> = res.seats.iter()
-            .filter(|s| s.occupied_by.is_none() && (s.config.type_ == "4P" || s.config.type_ == "6P"))
-            .take(required).map(|s| s.config.id.clone()).collect();
-        return if seats.len() == required { Some(seats) } else { None };
+        let seat = res.seats.iter()
+            .find(|s| s.occupied_by.is_none() && (s.config.type_ == "4P" || s.config.type_ == "6P"));
+        return seat.map(|s| vec![s.config.id.clone()]);
     }
 
+    // General logic: groups prefer sofas, otherwise bar counter
     if customer.party_size > 1 {
-        let sofa: Vec<String> = res.seats.iter()
-            .filter(|s| s.occupied_by.is_none() && (s.config.type_ == "4P" || s.config.type_ == "6P"))
-            .take(required).map(|s| s.config.id.clone()).collect();
-        if sofa.len() == required { return Some(sofa); }
+        let sofa = res.seats.iter()
+            .find(|s| s.occupied_by.is_none() && (s.config.type_ == "4P" || s.config.type_ == "6P"));
+        if let Some(s) = sofa {
+            return Some(vec![s.config.id.clone()]);
+        }
     }
 
-    let any_seats: Vec<String> = res.seats.iter()
-        .filter(|s| s.occupied_by.is_none())
-        .take(required).map(|s| s.config.id.clone()).collect();
+    // Finally try any available seats (e.g., bar counter)
+    let any_seat = res.seats.iter()
+        .find(|s| s.occupied_by.is_none());
         
-    if any_seats.len() == required { Some(any_seats) } else { None }
+    any_seat.map(|s| vec![s.config.id.clone()])
 }
 
 fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config: &Vec<SeatConfig>) -> Result<Vec<SimulationFrame>> {
@@ -189,18 +204,27 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
     
     let mut current_seats: Vec<Seat> = seats_config.iter().map(|s| Seat {
         id: s.id.clone(), type_: s.type_.clone(), occupied_by: None,
-        is_baby_chair_attached: false, is_wheelchair_accessible: s.is_wheelchair_accessible,
+        baby_chair_count: 0, is_wheelchair_accessible: s.is_wheelchair_accessible,
     }).collect();
     
     let mut event_idx = 0;
-    let mut family_has_baby = std::collections::HashMap::new();
-
     // Pre-scan: identify families with babies for visualization
+    let mut family_baby_count: HashMap<u32, u32> = HashMap::new();
     for evt in &sorted_events {
-        if let Action::Arrive = evt.action {
-             if evt.log_message.contains("Baby: 1") || evt.log_message.contains("Baby: 2") {
-                 family_has_baby.insert(evt.family_id, true);
-             }
+        match &evt.action {
+            Action::Arrive => {
+                 // Extract baby count from log message: "Baby: X"
+                 if let Some(pos) = evt.log_message.find("Baby: ") {
+                     let start = pos + 6;
+                     let end = evt.log_message[start..].find(',').map(|p| start + p).unwrap_or(evt.log_message.len());
+                     if let Ok(count) = evt.log_message[start..end].trim().parse::<u32>() {
+                         if count > 0 {
+                             family_baby_count.insert(evt.family_id, count);
+                         }
+                     }
+                 }
+            },
+            _ => {}
         }
     }
 
@@ -213,8 +237,8 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                     for id in ids.split(',') {
                         if let Some(s) = current_seats.iter_mut().find(|seat| seat.id == id) {
                             s.occupied_by = Some(evt.family_id);
-                            if family_has_baby.contains_key(&evt.family_id) {
-                                s.is_baby_chair_attached = true;
+                            if let Some(&count) = family_baby_count.get(&evt.family_id) {
+                                s.baby_chair_count = count;
                             }
                         }
                     }
@@ -223,7 +247,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                     for id in ids.split(',') {
                         if let Some(s) = current_seats.iter_mut().find(|seat| seat.id == id) {
                             s.occupied_by = None;
-                            s.is_baby_chair_attached = false;
+                            s.baby_chair_count = 0;
                         }
                     }
                 },
@@ -232,12 +256,33 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
             event_idx += 1;
         }
         
+        let frame_events: Vec<crate::models::SimulationEvent> = sorted_events.iter()
+            .filter(|e| e.time == t)
+            .map(|e| crate::models::SimulationEvent {
+                timestamp: e.time,
+                type_: match &e.action {
+                    Action::Arrive => "ARRIVAL".to_string(),
+                    Action::Sit(_) => "SEATED".to_string(),
+                    Action::Leave(_) => "LEFT".to_string(),
+                    Action::Error(_) => "ERROR".to_string(),
+                },
+                customer_id: 0, // Simplified
+                family_id: e.family_id,
+                seat_id: match &e.action {
+                    Action::Sit(id) | Action::Leave(id) => Some(id.clone()),
+                    _ => None,
+                },
+                message: e.log_message.clone(),
+            }).collect();
+
+        let frame_logs: Vec<String> = frame_events.iter().map(|e| e.message.clone()).collect();
+
         frames.push(SimulationFrame {
             timestamp: t,
             seats: current_seats.clone(),
             waiting_queue: vec![],
-            events: vec![],
-            logs: vec![],
+            events: frame_events,
+            logs: frame_logs,
         });
     }
     Ok(frames)
