@@ -65,3 +65,6 @@ npm run tauri dev
 - `MasterTimeline`: Global time control.
 - `SelectionTimeline`: Detailed view for selected entities.
 - `LogTerminal`: Real-time event logs.
+
+## 📝 Recent Updates
+- Added new simulation features
