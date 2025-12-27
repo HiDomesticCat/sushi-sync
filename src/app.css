@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sumi: #1C1C1C;
+  --color-panel: #252525;
+  --color-hinoki: #E0D2C2;
+  --color-salmon: #FF7E67;
+  --color-matcha: #B8D086;
+  --color-ocean: #82AAFF;
+  --color-primary: #F0F0F0;
+  --color-muted: #888888;
+}
+
+/* Japanese Pattern Classes */
+.pattern-seigaiha {
+  background-color: #252525;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23E0D2C2' fill-opacity='0.1'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.pattern-asanoha {
+  background-color: #252525;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23E0D2C2' fill-opacity='0.1' d='M12 0l12 12-12 12L0 12 12 0zm0 2.83L2.83 12 12 21.17 21.17 12 12 2.83z'/%3E%3C/svg%3E");
+}
+
+/* Wood Texture Background */
+.bg-wood {
+  background: linear-gradient(135deg, #E0D2C2 0%, #D4C4B0 50%, #E0D2C2 100%);
+}
+
+/* Torn Paper Edge Effect */
+.torn-edge {
+  position: relative;
+}
+
+.torn-edge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-image:
+    radial-gradient(circle at 10px 4px, transparent 3px, var(--color-panel) 3px),
+    radial-gradient(circle at 30px 4px, transparent 3px, var(--color-panel) 3px),
+    radial-gradient(circle at 50px 4px, transparent 3px, var(--color-panel) 3px),
+    radial-gradient(circle at 70px 4px, transparent 3px, var(--color-panel) 3px),
+    radial-gradient(circle at 90px 4px, transparent 3px, var(--color-panel) 3px);
+  background-size: 20px 8px;
+  background-repeat: repeat-x;
+}
+
+/* Torn paper edge bottom */
+.torn-edge-bottom {
+  position: relative;
+}
+.torn-edge-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent 0%, #1C1C1C 100%);
+}
+
+/* Receipt paper texture */
+.bg-receipt {
+  background: linear-gradient(to bottom, #FAFAFA 0%, #F5F5F0 100%);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-sumi);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-hinoki);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-salmon);
+}
+
+/* Smooth Transitions */
+* {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Typography */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+/* Focus States */
+:focus {
+  outline: 2px solid var(--color-ocean);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-salmon);
+  color: var(--color-primary);
+}
