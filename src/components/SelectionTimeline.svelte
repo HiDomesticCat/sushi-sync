@@ -1,6 +1,5 @@
 <script lang="ts">
   import Card from './ui/Card.svelte';
-  import Tooltip from './ui/Tooltip.svelte';
   import { simulationStore } from '../stores/simulation';
   import { selectionStore } from '../stores/selection';
   import { playbackStore, formatTime, setTime } from '../stores/playback';
@@ -101,90 +100,132 @@
   }
 </script>
 
-<div class="mt-0">
-  <Card variant="elevated" padding="md" class="flex flex-col justify-center">
+<div class="bg-white border-t border-border shadow-2xl">
+  <div class="max-w-[1600px] mx-auto px-6 py-3">
+    
     <!-- Header with Time Display -->
-    <div class="flex items-center justify-between mb-2">
-      <h3 class="text-sm font-semibold text-text-main flex items-center gap-2">
-        Timeline
-      </h3>
-      <div class="text-xs text-text-muted">
-        <span class="font-mono text-primary font-bold">{formatTime($playbackStore.currentTime)}</span>
-        <span> / {formatTime($playbackStore.maxTime)}</span>
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-4">
+        <h3 class="text-xs font-bold text-sumi/60 uppercase tracking-widest">
+          Selection Timeline
+        </h3>
+        {#if lanes.length > 0}
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">
+              {lanes.length} Selected
+            </span>
+          </div>
+        {/if}
+      </div>
+      
+      <div class="flex items-center gap-3 bg-bg-panel px-3 py-1 rounded-full border border-border shadow-inner">
+        <span class="font-mono text-sm text-primary font-bold">{formatTime($playbackStore.currentTime)}</span>
+        <span class="text-border">|</span>
+        <span class="font-mono text-sm text-text-muted">{formatTime($playbackStore.maxTime)}</span>
       </div>
     </div>
 
     <!-- Main Timeline Container -->
-    <div class="relative bg-bg-panel rounded border border-border">
+    <div class="relative">
       
       <!-- Global Scrubber (Range Input) -->
-      <div class="relative h-8 w-full z-30 bg-bg-main/30">
+      <div class="relative h-8 w-full z-30 mb-1">
         <input
           type="range"
           min="0"
           max={$playbackStore.maxTime > 0 ? $playbackStore.maxTime : 0}
           value={$playbackStore.currentTime}
           oninput={handleSeek}
-          class="absolute top-0 bottom-0 left-3 right-3 h-full opacity-0 cursor-pointer z-40 m-0 w-[calc(100%-1.5rem)]"
+          class="absolute top-0 bottom-0 left-0 right-0 h-full opacity-0 cursor-pointer z-40 m-0 w-full"
           disabled={$playbackStore.maxTime === 0}
         />
         <!-- Visual Track Wrapper -->
-        <div class="absolute inset-x-3 top-0 bottom-0 pointer-events-none">
+        <div class="absolute inset-0 pointer-events-none flex items-center">
           <!-- Track -->
-          <div class="absolute top-1/2 left-0 right-0 h-1 bg-border -translate-y-1/2 rounded-full"></div>
-          <!-- Progress Fill -->
-          <div 
-            class="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full"
-            style="width: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
-          ></div>
+          <div class="w-full h-1 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+             <!-- Progress Fill -->
+            <div 
+              class="h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-100"
+              style="width: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
+            ></div>
+          </div>
           <!-- Thumb Indicator -->
           <div 
-            class="absolute top-1/2 w-4 h-4 bg-primary rounded-full -translate-y-1/2 -translate-x-1/2 shadow border-2 border-white"
-            style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
-          ></div>
+            class="absolute w-4 h-4 bg-white rounded-full shadow-lg border-2 border-primary z-50 flex items-center justify-center transition-all duration-100"
+            style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%; transform: translateX(-50%);"
+          >
+            <div class="w-1 h-1 bg-primary rounded-full"></div>
+          </div>
         </div>
       </div>
 
       <!-- Lanes Container -->
-      {#if lanes.length > 0}
-        <div class="border-t border-border bg-bg-main/50 max-h-48 overflow-y-auto">
-          {#each lanes as lane}
-            <div class="relative h-8 border-b border-border/50 flex items-center">
-              <!-- Lane Label -->
-              <div class="w-16 px-2 text-xs text-text-muted font-mono border-r border-border/50 shrink-0 truncate" title="{lane.type} {lane.id}">
-                {lane.id}
-              </div>
-              
-              <!-- Lane Track -->
-              <div class="relative flex-1 h-full mx-2">
-                {#each lane.intervals as interval}
-                  {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
-                  {@const width = ((interval.endTime - interval.startTime) / $playbackStore.maxTime) * 100}
-                  <div class="absolute top-2 bottom-2" style="left: {left}%; width: {Math.max(width, 0.5)}%;">
-                    <Tooltip text="{lane.type} {lane.id}: {interval.type || 'Occupied'} ({formatTime(interval.startTime)} - {formatTime(interval.endTime)})" class="w-full h-full block">
-                      <div
-                        class="w-full h-full rounded-sm opacity-80"
-                        style="background-color: {interval.color};"
-                      ></div>
-                    </Tooltip>
-                  </div>
-                {/each}
+      <div class="bg-slate-50/50 rounded-lg border border-slate-200/60 overflow-hidden">
+        {#if lanes.length > 0}
+          <div class="max-h-[25vh] overflow-y-auto custom-scrollbar">
+            {#each lanes as lane}
+              <div class="relative h-7 border-b border-slate-200/40 flex items-center hover:bg-white transition-colors group">
+                <!-- Lane Label -->
+                <div class="w-16 px-2 text-[10px] text-slate-500 font-bold font-mono border-r border-slate-200/40 shrink-0 truncate group-hover:text-primary transition-colors" title="{lane.type} {lane.id}">
+                  {lane.id}
+                </div>
                 
-                <!-- Current Time Line in Lane -->
-                <div
-                  class="absolute top-0 bottom-0 w-px bg-accent/50 pointer-events-none"
-                  style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
-                ></div>
+                <!-- Lane Track -->
+                <div class="relative flex-1 h-full px-1">
+                  {#each lane.intervals as interval}
+                    {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
+                    {@const width = ((interval.endTime - interval.startTime) / $playbackStore.maxTime) * 100}
+                    <div class="absolute top-1.5 bottom-1.5" style="left: {left}%; width: {Math.max(width, 0.5)}%;">
+                      <div
+                        class="w-full h-full rounded-sm opacity-90 shadow-sm border border-white/20 hover:scale-y-110 transition-transform cursor-help"
+                        style="background-color: {interval.color};"
+                        title="{lane.type} {lane.id}: {interval.type || 'Occupied'} ({formatTime(interval.startTime)} - {formatTime(interval.endTime)})"
+                      ></div>
+                    </div>
+                  {/each}
+                  
+                  <!-- Current Time Line in Lane -->
+                  <div
+                    class="absolute top-0 bottom-0 w-px bg-primary/20 pointer-events-none z-10"
+                    style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
+                  ></div>
+                </div>
               </div>
-            </div>
-          {/each}
-        </div>
-      {:else}
-        <div class="p-4 text-center text-text-muted text-xs italic border-t border-border">
-          Select seats or families to compare timeline details
-        </div>
-      {/if}
+            {/each}
+          </div>
+        {:else}
+          <div class="p-4 text-center">
+            <p class="text-slate-400 text-[10px] font-medium italic">
+              Select seats or families on the map to compare their activity timelines
+            </p>
+          </div>
+        {/if}
+      </div>
       
     </div>
-  </Card>
+  </div>
 </div>
+
+<style>
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.02);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 40px;
+    cursor: pointer;
+  }
+</style>

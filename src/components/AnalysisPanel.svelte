@@ -176,7 +176,6 @@
         <div class="text-sm space-y-1">
           <p><span class="text-muted">Type:</span> {selectedSeatDetails.config?.type}</p>
           <p><span class="text-muted">Wheelchair:</span> {selectedSeatDetails.config?.isWheelchairAccessible ? 'Yes' : 'No'}</p>
-          <p><span class="text-muted">Baby Chair:</span> {selectedSeatDetails.config?.canAttachBabyChair ? 'Yes' : 'No'}</p>
           <p><span class="text-muted">Times Used:</span> {selectedSeatDetails.occupancyHistory.length}</p>
         </div>
       </div>

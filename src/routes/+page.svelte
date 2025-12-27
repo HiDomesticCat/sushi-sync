@@ -20,18 +20,14 @@
     
     <div class="flex-1 flex flex-col relative min-w-0">
       
-      <div class="flex-1 relative bg-gray-100">
-        <RestaurantMap />
-        
-        <div class="absolute bottom-4 left-4 z-40 w-96 max-h-48 opacity-90">
-             <LogTerminal />
+      <div class="flex-1 relative bg-gray-100 overflow-auto">
+        <div class="min-w-full min-h-full">
+          <RestaurantMap />
         </div>
       </div>
 
-      <div class="flex-none flex flex-col z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-        <div class="border-t border-gray-200 bg-white">
-          <SelectionTimeline />
-        </div>
+      <div class="flex-none flex flex-col z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] bg-white">
+        <SelectionTimeline />
       </div>
       
     </div>

@@ -221,7 +221,4 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }
   }
-  .animate-bounce-slow {
-    animation: bounce-slow 2s infinite;
-  }
 </style>
