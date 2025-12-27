@@ -4,8 +4,8 @@
   import Button from './ui/Button.svelte';
   import Select from './ui/Select.svelte';
   import Badge from './ui/Badge.svelte';
-  import { Plus, Trash2, Upload, Download } from 'lucide-svelte';
-  import { customerConfigStore, addCustomer, removeCustomer, clearCustomers, importCustomersFromCSV, exportCustomersToCSV } from '../stores/config';
+  import { Plus, Trash2, Upload, Download, Wand2 } from 'lucide-svelte';
+  import { customerConfigStore, addCustomer, removeCustomer, clearCustomers, importCustomersFromCSV, exportCustomersToCSV, generateCustomersInRust } from '../stores/config';
   import { uiStore, closeCustomerConfigModal } from '../stores/ui';
   import type { CustomerConfig, CustomerType } from '../types';
 
@@ -86,6 +86,15 @@
     a.download = 'customers.csv';
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function handleGenerate() {
+    const count = parseInt(prompt("How many customers?", "20") || "0");
+    if (count <= 0) return;
+    const maxTime = parseInt(prompt("Max arrival time (seconds)?", "3600") || "0");
+    if (maxTime <= 0) return;
+    
+    await generateCustomersInRust(count, maxTime);
   }
 
   function addSampleData() {
@@ -194,6 +203,9 @@
           Customers ({$customerConfigStore.length})
         </h3>
         <div class="flex gap-2">
+          <Button variant="secondary" size="sm" onclick={handleGenerate}>
+            <Wand2 class="w-4 h-4 mr-1" /> Generate
+          </Button>
           <Button variant="secondary" size="sm" onclick={addSampleData}>Sample</Button>
           <Button variant="secondary" size="sm" onclick={handleImport}>
             <Upload class="w-4 h-4 mr-1" /> Import

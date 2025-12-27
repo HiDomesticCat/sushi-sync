@@ -74,7 +74,7 @@
   }
 </script>
 
-<Card variant="elevated" padding="md" class="h-full bg-bg-panel/80 backdrop-blur-sm">
+<Card variant="elevated" padding="md" class="min-h-full bg-bg-panel/80 backdrop-blur-sm">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-semibold text-text-main flex items-center gap-2">
       <span class="text-xl">🍣</span> Restaurant Floor

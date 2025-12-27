@@ -7,7 +7,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
     // Skip header if present, handle empty lines
     for line in csv_content.lines() {
         let line = line.trim();
-        if line.is_empty() || line.starts_with("id,") || line.starts_with("ID,") {
+        if line.is_empty() || line.starts_with("id,") || line.starts_with("ID,") || line.starts_with("family_id") {
             continue;
         }
 

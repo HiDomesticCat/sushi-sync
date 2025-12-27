@@ -39,7 +39,7 @@
   }
 </script>
 
-<header class="fixed top-0 left-0 right-0 z-50 bg-bg-panel border-b-2 border-border shadow-lg">
+<header class="w-full z-50 bg-bg-panel border-b-2 border-border shadow-lg">
   <!-- Noren curtain decorative top -->
   <div class="h-2 bg-wood relative overflow-hidden">
     <div class="absolute inset-0 flex">

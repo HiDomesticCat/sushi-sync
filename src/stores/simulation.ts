@@ -113,7 +113,7 @@ export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
   let csvContent = "family_id,customer_id,customer_type,arrival_time,party_size,needs_baby_chair,needs_wheelchair,estimated_dining_time\n";
   
   customerConfig.forEach(customer => {
-    csvContent += `${customer.familyId},${customer.id},${customer.type},${customer.arrivalTime},${customer.partySize},${customer.needsBabyChair ? 1 : 0},${customer.needsWheelchair ? 1 : 0},${customer.estimatedDiningTime}\n`;
+    csvContent += `${customer.familyId},${customer.id},${customer.type},${customer.arrivalTime},${customer.partySize},${customer.needsBabyChair},${customer.needsWheelchair},${customer.estimatedDiningTime}\n`;
   });
   
   simulationStore.update(s => ({ ...s, loading: true, error: null }));

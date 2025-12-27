@@ -1,6 +1,5 @@
 <script lang="ts">
   import Header from '../components/Header.svelte';
-  import MasterTimeline from '../components/MasterTimeline.svelte';
   import SelectionTimeline from '../components/SelectionTimeline.svelte';
   import RestaurantMap from '../components/RestaurantMap.svelte';
   import LogTerminal from '../components/LogTerminal.svelte';
@@ -20,14 +19,8 @@
   </header>
 
   <div class="bg-bg-panel border-b border-border p-4 z-0 shrink-0">
-    <MasterTimeline />
+    <SelectionTimeline />
   </div>
-
-  {#if $selectionStore.selectedSeats.length > 0 || $selectionStore.selectedFamilies.length > 0}
-    <div class="bg-bg-panel border-b border-border px-4 pb-2 z-0 min-h-0 shrink-0">
-      <SelectionTimeline />
-    </div>
-  {/if}
 
   <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3">
     

@@ -21,3 +21,5 @@ Thumbs.db
 
 # Tauri
 src-tauri/target/
+
+Version2/

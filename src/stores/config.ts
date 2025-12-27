@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import { invoke } from '@tauri-apps/api/core';
 import type { SeatConfig, CustomerConfig } from '../types';
 
 // ===== Default Seat Configuration =====
@@ -119,6 +120,29 @@ export function exportCustomersToCSV(): string {
   })();
   
   return csv;
+}
+
+export async function generateCustomersInRust(count: number, maxArrivalTime: number) {
+  try {
+    const customers = await invoke<any[]>('generate_customers', { count, maxArrivalTime });
+    
+    const mappedCustomers: CustomerConfig[] = customers.map(c => ({
+      id: c.id,
+      familyId: c.family_id,
+      arrivalTime: c.arrival_time,
+      type: c.type,
+      partySize: c.party_size,
+      needsBabyChair: c.canAttachBabyChair,
+      needsWheelchair: c.isWheelchairAccessible,
+      estimatedDiningTime: c.est_dining_time
+    }));
+    
+    customerConfigStore.set(mappedCustomers);
+    return true;
+  } catch (err) {
+    console.error("Failed to generate customers:", err);
+    return false;
+  }
 }
 
 // ===== Seat Helper Functions =====

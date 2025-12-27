@@ -171,83 +171,101 @@
   }
 </script>
 
-{#if $selectionStore.selectedSeats.length > 0 || $selectionStore.selectedFamilies.length > 0}
-  <div transition:fade class="mt-4">
-    <Card variant="elevated" padding="md">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-semibold text-text-main">
-          Selected Details
-          {#if $selectionStore.selectedSeats.length > 0}
-            <span class="text-text-muted font-normal ml-2">Seats: {$selectionStore.selectedSeats.join(', ')}</span>
-          {/if}
-          {#if $selectionStore.selectedFamilies.length > 0}
-            <span class="text-text-muted font-normal ml-2">Families: {$selectionStore.selectedFamilies.join(', ')}</span>
-          {/if}
-        </h3>
-      </div>
+<div class="mt-0">
+  <Card variant="elevated" padding="md" class="flex flex-col justify-center">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="text-sm font-semibold text-text-main flex items-center gap-2">
+        Selected Details
+        {#if $selectionStore.selectedSeats.length > 0}
+          <span class="text-text-muted font-normal ml-2 text-xs bg-bg-main px-2 py-0.5 rounded-full border border-border">Seats: {$selectionStore.selectedSeats.join(', ')}</span>
+        {/if}
+        {#if $selectionStore.selectedFamilies.length > 0}
+          <span class="text-text-muted font-normal ml-2 text-xs bg-bg-main px-2 py-0.5 rounded-full border border-border">Families: {$selectionStore.selectedFamilies.join(', ')}</span>
+        {/if}
+      </h3>
+    </div>
 
-      <div class="relative h-16 bg-bg-panel rounded border border-border overflow-hidden">
-        <!-- Background Grid -->
-        {#each Array(11) as _, i}
-          <div class="absolute top-0 bottom-0 w-px bg-border/30" style="left: {i * 10}%"></div>
-        {/each}
+    <div 
+      class="relative h-16 bg-bg-panel rounded border border-border overflow-hidden cursor-pointer"
+      onclick={handleTimelineClick}
+      onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e as unknown as MouseEvent)}
+      role="button"
+      tabindex="0"
+      aria-label="Timeline interaction"
+    >
+      <!-- Background Grid -->
+      {#each Array(11) as _, i}
+        <div class="absolute top-0 bottom-0 w-px bg-border/30 pointer-events-none" style="left: {i * 10}%"></div>
+      {/each}
 
-        <!-- Click Handler Layer -->
-        <div 
-          class="absolute inset-0 z-10 cursor-pointer"
-          onclick={handleTimelineClick}
-          onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e as unknown as MouseEvent)}
-          role="button"
-          tabindex="0"
-          aria-label="Timeline interaction"
-        ></div>
+      <!-- Placeholder Text -->
+      {#if $selectionStore.selectedSeats.length === 0 && $selectionStore.selectedFamilies.length === 0}
+        <div class="absolute inset-0 flex items-center justify-center text-text-muted text-sm italic pointer-events-none z-10">
+          Select a seat or family to view details
+        </div>
+      {/if}
 
-        <!-- Seat Intervals -->
-        {#each seatIntervals as interval}
-          {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
-          {@const width = ((interval.endTime - interval.startTime) / $playbackStore.maxTime) * 100}
-          <Tooltip text="Seat {interval.seatId}: Family {interval.familyId} ({formatTime(interval.startTime)} - {formatTime(interval.endTime)})">
+      <!-- Progress Fill -->
+      <div
+        class="absolute inset-y-0 left-0 bg-primary/5 pointer-events-none transition-all duration-100"
+        style="width: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
+      ></div>
+
+      <!-- Seat Intervals -->
+      {#each seatIntervals as interval}
+        {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
+        {@const width = ((interval.endTime - interval.startTime) / $playbackStore.maxTime) * 100}
+        <div class="absolute top-1 h-6" style="left: {left}%; width: {Math.max(width, 0.5)}%;">
+          <Tooltip text="Seat {interval.seatId}: Family {interval.familyId} ({formatTime(interval.startTime)} - {formatTime(interval.endTime)})" class="w-full h-full block">
             <div
-              class="absolute top-1 h-6 rounded-sm opacity-80 pointer-events-none"
-              style="left: {left}%; width: {Math.max(width, 0.5)}%; background-color: {interval.color};"
+              class="w-full h-full rounded-sm opacity-80"
+              style="background-color: {interval.color};"
             >
               <span class="text-[10px] text-white px-1 truncate block">{interval.familyId}</span>
             </div>
           </Tooltip>
-        {/each}
+        </div>
+      {/each}
 
-        <!-- Family Intervals -->
-        {#each familyIntervals as interval}
-          {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
-          {@const width = ((interval.endTime - interval.startTime) / $playbackStore.maxTime) * 100}
-          <Tooltip text="Family {interval.familyId}: {interval.type} ({formatTime(interval.startTime)} - {formatTime(interval.endTime)})">
+      <!-- Family Intervals -->
+      {#each familyIntervals as interval}
+        {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
+        {@const width = ((interval.endTime - interval.startTime) / $playbackStore.maxTime) * 100}
+        <div class="absolute bottom-1 h-6" style="left: {left}%; width: {Math.max(width, 0.5)}%;">
+          <Tooltip text="Family {interval.familyId}: {interval.type} ({formatTime(interval.startTime)} - {formatTime(interval.endTime)})" class="w-full h-full block">
             <div
-              class="absolute bottom-1 h-6 rounded-sm pointer-events-none transition-opacity"
-              style="left: {left}%; width: {Math.max(width, 0.5)}%; background-color: {interval.color}; opacity: {interval.type === 'WAITING' ? 0.4 : 0.8}"
+              class="w-full h-full rounded-sm transition-opacity"
+              style="background-color: {interval.color}; opacity: {interval.type === 'WAITING' ? 0.4 : 0.8}"
             >
               <span class="text-[10px] text-white px-1 truncate block">F{interval.familyId}</span>
             </div>
           </Tooltip>
-        {/each}
+        </div>
+      {/each}
 
-        <!-- Fusion/Overlap Intervals -->
-        {#each fusionIntervals as overlap}
-          {@const left = (overlap.startTime / $playbackStore.maxTime) * 100}
-          {@const width = ((overlap.endTime - overlap.startTime) / $playbackStore.maxTime) * 100}
-          <Tooltip text="Overlap: Families {overlap.families.join(', ')}">
-            <div
-              class="absolute top-0 bottom-0 conflict-stripe pointer-events-none z-20"
-              style="left: {left}%; width: {Math.max(width, 0.5)}%;"
-            ></div>
-          </Tooltip>
-        {/each}
+      <!-- Fusion/Overlap Intervals -->
+      {#each fusionIntervals as overlap}
+        {@const left = (overlap.startTime / $playbackStore.maxTime) * 100}
+        {@const width = ((overlap.endTime - overlap.startTime) / $playbackStore.maxTime) * 100}
+        <div class="absolute top-0 bottom-0 z-20 pointer-events-none" style="left: {left}%; width: {Math.max(width, 0.5)}%;">
+           <Tooltip text="Overlap: Families {overlap.families.join(', ')}" class="w-full h-full block pointer-events-auto">
+              <div class="w-full h-full conflict-stripe"></div>
+           </Tooltip>
+        </div>
+      {/each}
 
-        <!-- Current Time Indicator -->
-        <div
-          class="absolute top-0 bottom-0 w-0.5 bg-accent z-30 pointer-events-none"
-          style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
-        ></div>
-      </div>
-    </Card>
-  </div>
-{/if}
+      <!-- Current Time Indicator -->
+      <div
+        class="absolute top-0 bottom-0 w-0.5 bg-accent z-30 pointer-events-none"
+        style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
+      ></div>
+    </div>
+
+    <!-- Time Labels -->
+    <div class="flex justify-between mt-1 text-xs text-text-muted px-1 select-none">
+      {#each [0, 25, 50, 75, 100] as pct}
+        <span>{formatTime($playbackStore.maxTime * pct / 100)}</span>
+      {/each}
+    </div>
+  </Card>
+</div>
