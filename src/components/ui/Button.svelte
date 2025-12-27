@@ -1,39 +1,49 @@
 <script lang="ts">
-  let {
-    variant = 'primary',
-    size = 'md',
-    disabled = false,
-    onclick,
-    type = 'button',
-    class: className = '',
-    ...props
-  } = $props();
+  import type { Snippet } from 'svelte';
 
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-sumi disabled:opacity-50 disabled:cursor-not-allowed';
+  type Variant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
+  type Size = 'sm' | 'md' | 'lg';
 
-  const variantClasses = {
-    primary: 'bg-wood text-sumi border-2 border-hinoki hover:bg-hinoki focus:ring-hinoki shadow-md',
-    secondary: 'bg-panel text-primary border-2 border-hinoki hover:bg-hinoki hover:text-sumi focus:ring-hinoki',
-    danger: 'bg-salmon text-primary border-2 border-salmon hover:brightness-110 focus:ring-salmon',
-    success: 'bg-matcha text-sumi border-2 border-matcha hover:brightness-110 focus:ring-matcha',
-    ghost: 'bg-transparent text-primary hover:bg-panel focus:ring-hinoki'
+  interface Props {
+    children?: Snippet;
+    variant?: Variant;
+    size?: Size;
+    class?: string;
+    [key: string]: any;
+  }
+
+  let { 
+    children, 
+    variant = 'primary', 
+    size = 'md', 
+    class: className = '', 
+    ...rest 
+  }: Props = $props();
+
+  const VARIANTS: Record<Variant, string> = {
+    primary: 'bg-sumi text-text-offwhite border-2 border-border-hinoki hover:bg-border-hinoki hover:text-bg-sumi',
+    secondary: 'bg-panel text-text-muted border border-border-hinoki/20 hover:border-border-hinoki hover:text-text-offwhite',
+    danger: 'bg-accent-salmon/10 text-accent-salmon border border-accent-salmon/50 hover:bg-accent-salmon hover:text-bg-sumi',
+    success: 'bg-accent-matcha/10 text-accent-matcha border border-accent-matcha/50 hover:bg-accent-matcha hover:text-bg-sumi',
+    ghost: 'bg-transparent text-text-muted hover:text-text-offwhite'
   };
 
-  const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg'
+  const SIZES: Record<Size, string> = {
+    sm: 'px-3 py-1 text-xs',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-6 py-3 text-base'
   };
 
-  let classes = $derived(`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`);
+  // Using $derived to generate classes reactively
+  let classes = $derived(`
+    inline-flex items-center justify-center font-mono transition-all duration-200 
+    disabled:opacity-50 disabled:cursor-not-allowed
+    ${VARIANTS[variant]} 
+    ${SIZES[size]} 
+    ${className}
+  `);
 </script>
 
-<button
-  type={type}
-  {disabled}
-  {onclick}
-  class={classes}
-  {...props}
->
-  <slot />
+<button class={classes} {...rest}>
+  {@render children?.()}
 </button>
