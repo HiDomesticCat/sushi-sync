@@ -24,13 +24,13 @@
       frame.seats.forEach(seat => {
         if (seat.type === 'SINGLE') {
           singleTotal++;
-          if (seat.occupiedBy) singleOccupied++;
+          if (seat.occupiedBy !== null) singleOccupied++;
         } else if (seat.type === '4P') {
           fourPTotal++;
-          if (seat.occupiedBy) fourPOccupied++;
+          if (seat.occupiedBy !== null) fourPOccupied++;
         } else if (seat.type === '6P') {
           sixPTotal++;
-          if (seat.occupiedBy) sixPOccupied++;
+          if (seat.occupiedBy !== null) sixPOccupied++;
         }
       });
     });

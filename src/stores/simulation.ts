@@ -73,13 +73,18 @@ export const simulationStats = derived(simulationStore, ($store) => {
     }
   });
   
-  // Calculate seat utilization (simplified)
-  const totalSeats = lastFrame?.seats?.length || 0;
-  let occupiedSeats = 0;
-  if (lastFrame?.seats) {
-    occupiedSeats = lastFrame.seats.filter(seat => seat.occupiedBy !== null).length;
-  }
-  const seatUtilization = totalSeats > 0 ? (occupiedSeats / totalSeats) * 100 : 0;
+  // Calculate seat utilization (average over all frames)
+  let totalSeatFrames = 0;
+  let occupiedSeatFrames = 0;
+  
+  frames.forEach(frame => {
+    if (frame.seats) {
+      totalSeatFrames += frame.seats.length;
+      occupiedSeatFrames += frame.seats.filter(seat => seat.occupiedBy !== null).length;
+    }
+  });
+  
+  const seatUtilization = totalSeatFrames > 0 ? (occupiedSeatFrames / totalSeatFrames) * 100 : 0;
   
   // Calculate average wait time (simplified)
   let totalWaitTime = 0;

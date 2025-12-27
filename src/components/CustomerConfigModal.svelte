@@ -103,9 +103,9 @@
       { id: 2, familyId: 2, arrivalTime: 5, type: 'FAMILY', partySize: 4, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 45 },
       { id: 3, familyId: 3, arrivalTime: 10, type: 'WITH_BABY', partySize: 3, babyChairCount: 1, wheelchairCount: 0, estimatedDiningTime: 40 },
       { id: 4, familyId: 4, arrivalTime: 15, type: 'INDIVIDUAL', partySize: 2, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 25 },
-      { id: 5, familyId: 5, arrivalTime: 20, type: 'WHEELCHAIR', partySize: 2, babyChairCount: 0, wheelchairCount: 1, estimatedDiningTime: 35 },
+      { id: 5, familyId: 5, arrivalTime: 20, type: 'WHEELCHAIR', partySize: 1, babyChairCount: 0, wheelchairCount: 1, estimatedDiningTime: 35 },
       { id: 6, familyId: 6, arrivalTime: 25, type: 'FAMILY', partySize: 6, babyChairCount: 1, wheelchairCount: 0, estimatedDiningTime: 50 },
-      { id: 7, familyId: 7, arrivalTime: 30, type: 'INDIVIDUAL', partySize: 1, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 15 },
+      { id: 7, familyId: 7, arrivalTime: 30, type: 'WITH_BABY', partySize: 1, babyChairCount: 2, wheelchairCount: 0, estimatedDiningTime: 40 }, // 1 Adult + 2 Babies
       { id: 8, familyId: 8, arrivalTime: 35, type: 'FAMILY', partySize: 3, babyChairCount: 0, wheelchairCount: 0, estimatedDiningTime: 40 },
     ];
     customerConfigStore.set(samples);

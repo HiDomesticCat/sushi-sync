@@ -10,17 +10,10 @@
   let singleCount = $state(10);
   let fourPersonCount = $state(4);
   let sixPersonCount = $state(2);
-  let singleWheelchair = $state(2);
-  let fourPersonWheelchair = $state(2);
-  let sixPersonWheelchair = $state(1);
-  let singleBabyChair = $state(true);
-  let fourPersonBabyChair = $state(true);
-  let sixPersonBabyChair = $state(true);
 
   // Computed values
   const totalSeats = $derived(singleCount + fourPersonCount + sixPersonCount);
   const totalCapacity = $derived(singleCount + (fourPersonCount * 4) + (sixPersonCount * 6));
-  const totalWheelchair = $derived(singleWheelchair + fourPersonWheelchair + sixPersonWheelchair);
 
   // Load current config when modal opens
   $effect(() => {
@@ -38,14 +31,6 @@
     singleCount = single.length;
     fourPersonCount = fourP.length;
     sixPersonCount = sixP.length;
-
-    singleWheelchair = single.filter(s => s.isWheelchairAccessible).length;
-    fourPersonWheelchair = fourP.filter(s => s.isWheelchairAccessible).length;
-    sixPersonWheelchair = sixP.filter(s => s.isWheelchairAccessible).length;
-
-    singleBabyChair = single.some(s => s.canAttachBabyChair);
-    fourPersonBabyChair = fourP.some(s => s.canAttachBabyChair);
-    sixPersonBabyChair = sixP.some(s => s.canAttachBabyChair);
   }
 
   function generateSeats(): SeatConfig[] {
@@ -55,8 +40,8 @@
       seats.push({
         id: `S${String(i).padStart(2, '0')}`,
         type: 'SINGLE',
-        canAttachBabyChair: singleBabyChair,
-        isWheelchairAccessible: i <= singleWheelchair
+        canAttachBabyChair: true, // Default support
+        isWheelchairAccessible: false // Bar not for wheelchair
       });
     }
 
@@ -64,8 +49,8 @@
       seats.push({
         id: `4P${String(i).padStart(2, '0')}`,
         type: '4P',
-        canAttachBabyChair: fourPersonBabyChair,
-        isWheelchairAccessible: i <= fourPersonWheelchair
+        canAttachBabyChair: true,
+        isWheelchairAccessible: true // Sofa is accessible
       });
     }
 
@@ -73,8 +58,8 @@
       seats.push({
         id: `6P${String(i).padStart(2, '0')}`,
         type: '6P',
-        canAttachBabyChair: sixPersonBabyChair,
-        isWheelchairAccessible: i <= sixPersonWheelchair
+        canAttachBabyChair: true,
+        isWheelchairAccessible: true // Sofa is accessible
       });
     }
 
@@ -90,12 +75,6 @@
     singleCount = 10;
     fourPersonCount = 4;
     sixPersonCount = 2;
-    singleWheelchair = 2;
-    fourPersonWheelchair = 2;
-    sixPersonWheelchair = 1;
-    singleBabyChair = true;
-    fourPersonBabyChair = true;
-    sixPersonBabyChair = true;
   }
 </script>
 
@@ -114,7 +93,7 @@
         <h3 class="text-lg font-semibold text-hinoki">Single Seats (Bar Counter)</h3>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 gap-4">
         <div>
           <label class="block text-sm font-medium text-primary mb-2">
             Count (1-20)
@@ -128,27 +107,6 @@
           </label>
           <div class="text-center text-lg font-bold text-salmon">{singleCount}</div>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium text-primary mb-2">
-            Wheelchair Accessible
-            <input
-              type="range"
-              bind:value={singleWheelchair}
-              min="0"
-              max={singleCount}
-              class="w-full accent-ocean"
-            />
-          </label>
-          <div class="text-center text-lg font-bold text-ocean">{singleWheelchair}</div>
-        </div>
-
-        <div class="flex items-center">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" bind:checked={singleBabyChair} class="w-4 h-4 accent-matcha" />
-            <span class="text-primary">Baby Chair Support</span>
-          </label>
-        </div>
       </div>
     </Card>
 
@@ -159,7 +117,7 @@
         <h3 class="text-lg font-semibold text-hinoki">4-Person Tables</h3>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 gap-4">
         <div>
           <label class="block text-sm font-medium text-primary mb-2">
             Count (0-10)
@@ -173,27 +131,6 @@
           </label>
           <div class="text-center text-lg font-bold text-salmon">{fourPersonCount}</div>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium text-primary mb-2">
-            Wheelchair Accessible
-            <input
-              type="range"
-              bind:value={fourPersonWheelchair}
-              min="0"
-              max={fourPersonCount}
-              class="w-full accent-ocean"
-            />
-          </label>
-          <div class="text-center text-lg font-bold text-ocean">{fourPersonWheelchair}</div>
-        </div>
-
-        <div class="flex items-center">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" bind:checked={fourPersonBabyChair} class="w-4 h-4 accent-matcha" />
-            <span class="text-primary">Baby Chair Support</span>
-          </label>
-        </div>
       </div>
     </Card>
 
@@ -204,7 +141,7 @@
         <h3 class="text-lg font-semibold text-hinoki">6-Person Tables</h3>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 gap-4">
         <div>
           <label class="block text-sm font-medium text-primary mb-2">
             Count (0-5)
@@ -218,27 +155,6 @@
           </label>
           <div class="text-center text-lg font-bold text-salmon">{sixPersonCount}</div>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium text-primary mb-2">
-            Wheelchair Accessible
-            <input
-              type="range"
-              bind:value={sixPersonWheelchair}
-              min="0"
-              max={sixPersonCount}
-              class="w-full accent-ocean"
-            />
-          </label>
-          <div class="text-center text-lg font-bold text-ocean">{sixPersonWheelchair}</div>
-        </div>
-
-        <div class="flex items-center">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" bind:checked={sixPersonBabyChair} class="w-4 h-4 accent-matcha" />
-            <span class="text-primary">Baby Chair Support</span>
-          </label>
-        </div>
       </div>
     </Card>
 
@@ -249,7 +165,7 @@
         <h3 class="text-lg font-semibold text-ocean">Summary</h3>
       </div>
 
-      <div class="grid grid-cols-3 gap-4 text-center">
+      <div class="grid grid-cols-2 gap-4 text-center">
         <div>
           <div class="text-3xl font-bold text-primary">{totalSeats}</div>
           <div class="text-sm text-muted">Total Seats</div>
@@ -257,10 +173,6 @@
         <div>
           <div class="text-3xl font-bold text-matcha">{totalCapacity}</div>
           <div class="text-sm text-muted">Total Capacity</div>
-        </div>
-        <div>
-          <div class="text-3xl font-bold text-ocean">{totalWheelchair}</div>
-          <div class="text-sm text-muted">Wheelchair</div>
         </div>
       </div>
     </Card>
