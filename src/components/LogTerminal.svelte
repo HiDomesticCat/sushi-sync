@@ -3,7 +3,7 @@
   import Card from './ui/Card.svelte';
   import Button from './ui/Button.svelte';
   import Badge from './ui/Badge.svelte';
-  import { simulationStore, allEvents } from '../stores/simulation';
+  import { simulationStore } from '../stores/simulation';
   import { playbackStore, formatTime } from '../stores/playback';
   import type { SimulationEventType } from '../types';
 
@@ -13,11 +13,14 @@
 
   let logContainer: HTMLElement;
 
-  // Filter events
+  // Get current frames from simulation store
+  let currentFrames = $derived($simulationStore.frames);
+  
+  // Filter events directly from frames (no separate allEvents store)
   let filteredEvents = $derived(
     filterType === 'ALL'
-      ? $allEvents
-      : $allEvents.filter(e => e.type === filterType)
+      ? $currentFrames.flatMap(f => f.events)
+      : $currentFrames.flatMap(f => f.events).filter(e => e.type === filterType)
   );
 
   // Events up to current time
@@ -59,7 +62,7 @@
     output += `Total Events: ${currentEvents.length}\n`;
     output += '================================\n\n';
 
-    currentEvents.forEach(event => {
+    currentEvents.forEach((event) => {
       const time = formatTime(event.timestamp);
       output += `[${time}] ${event.type.padEnd(10)} | Family ${event.familyId} | ${event.message}\n`;
     });
@@ -159,16 +162,16 @@
   <!-- Status Bar -->
   <div class="bg-panel px-4 py-2 border-t border-hinoki flex justify-between text-xs text-muted">
     <span>
-      {#if $simulationStore.isComplete}
+      {#if $simulationStore.frames.length > 0 && $simulationStore.frames.length - 1 === $simulationStore.currentFrameIndex}
         ✓ Simulation complete
-      {:else if $simulationStore.isRunning}
-        ▶ Running...
+      {:else if $simulationStore.isPlaying}
+        ▶ Playing...
       {:else}
         ○ Ready
       {/if}
     </span>
     <span>
-      Filter: {filterType} | {currentEvents.length} / {$allEvents.length} events
+      Filter: {filterType} | {currentEvents.length} events
     </span>
   </div>
 </Card>

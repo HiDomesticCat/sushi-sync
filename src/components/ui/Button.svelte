@@ -1,13 +1,4 @@
 <script lang="ts">
-  interface Props {
-    variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
-    size?: 'sm' | 'md' | 'lg';
-    disabled?: boolean;
-    onclick?: () => void;
-    type?: 'button' | 'submit' | 'reset';
-    class?: string;
-  }
-
   let {
     variant = 'primary',
     size = 'md',
@@ -16,7 +7,7 @@
     type = 'button',
     class: className = '',
     ...props
-  }: Props = $props();
+  } = $props();
 
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-sumi disabled:opacity-50 disabled:cursor-not-allowed';
 
@@ -34,11 +25,11 @@
     lg: 'px-6 py-3 text-lg'
   };
 
-  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  let classes = $derived(`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`);
 </script>
 
 <button
-  {type}
+  type={type}
   {disabled}
   {onclick}
   class={classes}

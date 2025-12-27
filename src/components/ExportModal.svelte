@@ -10,10 +10,7 @@
   import { formatTime } from '../stores/playback';
 
   let copied = false;
-  let stats;
-
-  // Reactive update for stats
-  $: stats = $simulationStats;
+  let stats = $derived($simulationStats);
 
   function generateExportData() {
     return {

@@ -145,6 +145,7 @@
   <div
     class="relative h-8 bg-sumi rounded-lg cursor-pointer overflow-hidden border border-hinoki/30"
     onclick={handleTimelineClick}
+    onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e)}
     role="slider"
     tabindex="0"
     aria-label="Timeline"
@@ -197,6 +198,9 @@
             <div
               class="relative flex-1 h-6 bg-sumi/50 rounded cursor-pointer {isSelected ? 'ring-2 ring-ocean' : ''}"
               onclick={handleTimelineClick}
+              onkeydown={(e) => e.key === 'Enter' && handleTimelineClick(e)}
+              role="button"
+              tabindex="0"
             >
               {#each intervals as interval}
                 {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
