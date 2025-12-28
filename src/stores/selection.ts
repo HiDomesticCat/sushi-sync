@@ -1,156 +1,75 @@
-import { writable, derived, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 interface SelectionState {
-  selectedSeats: string[];
-  selectedFamilies: number[];
-  selectedCustomer: number | null;
+  selectedSeatIds: string[];
+  selectedFamilyIds: number[];
   hoveredSeat: string | null;
-  hoveredFamily: number | null;
 }
 
-export const selectionStore = writable<SelectionState>({
-  selectedSeats: [],
-  selectedFamilies: [],
-  selectedCustomer: null,
+const initialState: SelectionState = {
+  selectedSeatIds: [],
+  selectedFamilyIds: [],
   hoveredSeat: null,
-  hoveredFamily: null
-});
+};
 
-// ===== Derived Stores =====
-export const hasSelection = derived(selectionStore, ($sel) =>
-  $sel.selectedSeats.length > 0 ||
-  $sel.selectedFamilies.length > 0 ||
-  $sel.selectedCustomer !== null
-);
+export const selectionStore = writable<SelectionState>(initialState);
 
-export const selectedSeatCount = derived(selectionStore, ($sel) =>
-  $sel.selectedSeats.length
-);
-
-export const selectedFamilyCount = derived(selectionStore, ($sel) =>
-  $sel.selectedFamilies.length
-);
-
-// ===== Seat Selection =====
-export function selectSeat(seatId: string, multiSelect = false) {
-  selectionStore.update(state => {
-    if (!multiSelect) {
-      return {
-        ...state,
-        selectedSeats: [seatId],
-        selectedFamilies: [],
-        selectedCustomer: null
-      };
+export const selectSeat = (seatId: string, multiSelect: boolean = false) => {
+  selectionStore.update(s => {
+    let newSeats = [...s.selectedSeatIds];
+    
+    if (multiSelect) {
+      // Multi-select mode: toggle inclusion
+      if (newSeats.includes(seatId)) {
+        newSeats = newSeats.filter(id => id !== seatId);
+      } else {
+        newSeats.push(seatId);
+      }
     } else {
-      const isSelected = state.selectedSeats.includes(seatId);
-      return {
-        ...state,
-        selectedSeats: isSelected
-          ? state.selectedSeats.filter(id => id !== seatId)
-          : [...state.selectedSeats, seatId],
-        // selectedFamilies: [], // Allow mixed selection
-        selectedCustomer: null
-      };
+      // Single-select mode: toggle or replace
+      if (newSeats.includes(seatId) && newSeats.length === 1) {
+        newSeats = [];
+      } else {
+        newSeats = [seatId];
+      }
     }
+
+    return { ...s, selectedSeatIds: newSeats };
   });
-}
+};
 
-export function deselectSeat(seatId: string) {
-  selectionStore.update(state => ({
-    ...state,
-    selectedSeats: state.selectedSeats.filter(id => id !== seatId)
-  }));
-}
+export const selectFamily = (familyId: number, multiSelect: boolean = false) => {
+  selectionStore.update(s => {
+    let newFamilies = [...s.selectedFamilyIds];
 
-export function isSeatSelected(seatId: string): boolean {
-  return get(selectionStore).selectedSeats.includes(seatId);
-}
-
-// ===== Family Selection =====
-export function selectFamily(familyId: number, multiSelect = false) {
-  selectionStore.update(state => {
-    if (!multiSelect) {
-      return {
-        ...state,
-        selectedFamilies: [familyId],
-        selectedSeats: [],
-        selectedCustomer: null
-      };
+    if (multiSelect) {
+      // Multi-select mode: toggle inclusion
+      if (newFamilies.includes(familyId)) {
+        newFamilies = newFamilies.filter(id => id !== familyId);
+      } else {
+        newFamilies.push(familyId);
+      }
     } else {
-      const isSelected = state.selectedFamilies.includes(familyId);
-      return {
-        ...state,
-        selectedFamilies: isSelected
-          ? state.selectedFamilies.filter(id => id !== familyId)
-          : [...state.selectedFamilies, familyId],
-        // selectedSeats: [], // Allow mixed selection
-        selectedCustomer: null
-      };
+      // Single-select mode: toggle or add to list
+      if (newFamilies.includes(familyId)) {
+        newFamilies = newFamilies.filter(id => id !== familyId);
+      } else {
+        newFamilies.push(familyId);
+      }
     }
+
+    return { ...s, selectedFamilyIds: newFamilies };
   });
-}
+};
 
-export function deselectFamily(familyId: number) {
-  selectionStore.update(state => ({
-    ...state,
-    selectedFamilies: state.selectedFamilies.filter(id => id !== familyId)
-  }));
-}
+export const setHoveredSeat = (seatId: string | null) => {
+  selectionStore.update(s => ({ ...s, hoveredSeat: seatId }));
+};
 
-export function isFamilySelected(familyId: number): boolean {
-  return get(selectionStore).selectedFamilies.includes(familyId);
-}
+export const clearHover = () => {
+  selectionStore.update(s => ({ ...s, hoveredSeat: null }));
+};
 
-// ===== Customer Selection =====
-export function selectCustomer(customerId: number) {
-  selectionStore.update(state => ({
-    ...state,
-    selectedCustomer: customerId,
-    selectedSeats: [],
-    selectedFamilies: []
-  }));
-}
-
-export function deselectCustomer() {
-  selectionStore.update(state => ({
-    ...state,
-    selectedCustomer: null
-  }));
-}
-
-// ===== Hover State =====
-export function setHoveredSeat(seatId: string | null) {
-  selectionStore.update(state => ({ ...state, hoveredSeat: seatId }));
-}
-
-export function setHoveredFamily(familyId: number | null) {
-  selectionStore.update(state => ({ ...state, hoveredFamily: familyId }));
-}
-
-export function clearHover() {
-  selectionStore.update(state => ({
-    ...state,
-    hoveredSeat: null,
-    hoveredFamily: null
-  }));
-}
-
-// ===== Clear All =====
-export function clearSelection() {
-  selectionStore.update(state => ({
-    ...state,
-    selectedSeats: [],
-    selectedFamilies: [],
-    selectedCustomer: null
-  }));
-}
-
-export function clearAllSelection() {
-  selectionStore.set({
-    selectedSeats: [],
-    selectedFamilies: [],
-    selectedCustomer: null,
-    hoveredSeat: null,
-    hoveredFamily: null
-  });
-}
+export const clearSelection = () => {
+  selectionStore.set(initialState);
+};

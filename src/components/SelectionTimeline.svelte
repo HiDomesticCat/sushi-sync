@@ -1,24 +1,27 @@
 <script lang="ts">
-  import Card from './ui/Card.svelte';
   import { simulationStore } from '../stores/simulation';
   import { selectionStore } from '../stores/selection';
   import { playbackStore, formatTime, setTime } from '../stores/playback';
   import { customerConfigStore, generateCustomerColors } from '../stores/config';
+  import { fade } from 'svelte/transition';
 
   $: familyColors = generateCustomerColors($customerConfigStore);
+  $: frames = $simulationStore.frames;
+  $: totalDuration = frames.length > 0 ? frames[frames.length - 1].timestamp : 0;
+  $: currentTime = $playbackStore.currentTime;
 
   // --- Data Processing ---
-  $: seatIntervals = calculateSeatIntervals($selectionStore.selectedSeats);
-  $: familyIntervals = calculateFamilyIntervals($selectionStore.selectedFamilies);
+  $: seatIntervals = calculateSeatIntervals($selectionStore.selectedSeatIds);
+  $: familyIntervals = calculateFamilyIntervals($selectionStore.selectedFamilyIds);
 
   // Group intervals by lane
   $: lanes = [
-    ...$selectionStore.selectedSeats.map(id => ({
+    ...$selectionStore.selectedSeatIds.map(id => ({
       id,
       type: 'Seat',
       intervals: seatIntervals.filter(i => i.seatId === id)
     })),
-    ...$selectionStore.selectedFamilies.map(id => ({
+    ...$selectionStore.selectedFamilyIds.map(id => ({
       id: `F${id}`,
       type: 'Family',
       intervals: familyIntervals.filter(i => i.familyId === id)
@@ -26,11 +29,11 @@
   ];
 
   function calculateSeatIntervals(seatIds: string[]) {
-    if (seatIds.length === 0 || $simulationStore.frames.length === 0) return [];
+    if (seatIds.length === 0 || frames.length === 0) return [];
     const intervals: Array<{ seatId: string; familyId: number; startTime: number; endTime: number; color: string; type?: string }> = [];
     const currentOccupants = new Map<string, { familyId: number; startTime: number }>();
 
-    $simulationStore.frames.forEach(frame => {
+    frames.forEach(frame => {
       frame.events.forEach(event => {
         if (event.type === 'SEATED' && event.seatId && seatIds.includes(event.seatId)) {
           currentOccupants.set(event.seatId, { familyId: event.familyId, startTime: event.timestamp });
@@ -54,11 +57,11 @@
   }
 
   function calculateFamilyIntervals(familyIds: number[]) {
-    if (familyIds.length === 0 || $simulationStore.frames.length === 0) return [];
+    if (familyIds.length === 0 || frames.length === 0) return [];
     const intervals: Array<{ familyId: number; type: string; startTime: number; endTime: number; color: string }> = [];
     const familyStates = new Map<number, { waitStart?: number; dineStart?: number }>();
 
-    $simulationStore.frames.forEach(frame => {
+    frames.forEach(frame => {
       frame.events.forEach(event => {
         if (!familyIds.includes(event.familyId)) return;
         if (event.type === 'ARRIVAL') {
@@ -71,7 +74,7 @@
               type: 'WAITING',
               startTime: state.waitStart,
               endTime: event.timestamp,
-              color: familyColors.get(event.familyId) || '#888'
+              color: '#fde047' // Yellow-300
             });
           }
           familyStates.set(event.familyId, { dineStart: event.timestamp });
@@ -92,6 +95,9 @@
     });
     return intervals;
   }
+
+  // Calculate percentage position
+  const getPos = (t: number) => (t / Math.max(1, totalDuration)) * 100;
 
   function handleSeek(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -146,13 +152,13 @@
              <!-- Progress Fill -->
             <div 
               class="h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-100"
-              style="width: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
+              style="width: {($playbackStore.currentTime / Math.max(1, $playbackStore.maxTime)) * 100}%"
             ></div>
           </div>
           <!-- Thumb Indicator -->
           <div 
             class="absolute w-4 h-4 bg-white rounded-full shadow-lg border-2 border-primary z-50 flex items-center justify-center transition-all duration-100"
-            style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%; transform: translateX(-50%);"
+            style="left: {($playbackStore.currentTime / Math.max(1, $playbackStore.maxTime)) * 100}%; transform: translateX(-50%);"
           >
             <div class="w-1 h-1 bg-primary rounded-full"></div>
           </div>
@@ -164,17 +170,17 @@
         {#if lanes.length > 0}
           <div class="max-h-[25vh] overflow-y-auto custom-scrollbar">
             {#each lanes as lane}
-              <div class="relative h-7 border-b border-slate-200/40 flex items-center hover:bg-white transition-colors group">
+              <div class="relative h-8 border-b border-slate-200/40 flex items-center hover:bg-white transition-colors group">
                 <!-- Lane Label -->
-                <div class="w-16 px-2 text-[10px] text-slate-500 font-bold font-mono border-r border-slate-200/40 shrink-0 truncate group-hover:text-primary transition-colors" title="{lane.type} {lane.id}">
+                <div class="w-20 px-2 text-[10px] text-slate-500 font-bold font-mono border-r border-slate-200/40 shrink-0 truncate group-hover:text-primary transition-colors" title="{lane.type} {lane.id}">
                   {lane.id}
                 </div>
                 
                 <!-- Lane Track -->
                 <div class="relative flex-1 h-full px-1">
                   {#each lane.intervals as interval}
-                    {@const left = (interval.startTime / $playbackStore.maxTime) * 100}
-                    {@const width = ((interval.endTime - interval.startTime) / $playbackStore.maxTime) * 100}
+                    {@const left = (interval.startTime / Math.max(1, totalDuration)) * 100}
+                    {@const width = ((interval.endTime - interval.startTime) / Math.max(1, totalDuration)) * 100}
                     <div class="absolute top-1.5 bottom-1.5" style="left: {left}%; width: {Math.max(width, 0.5)}%;">
                       <div
                         class="w-full h-full rounded-sm opacity-90 shadow-sm border border-white/20 hover:scale-y-110 transition-transform cursor-help"
@@ -186,15 +192,15 @@
                   
                   <!-- Current Time Line in Lane -->
                   <div
-                    class="absolute top-0 bottom-0 w-px bg-primary/20 pointer-events-none z-10"
-                    style="left: {($playbackStore.currentTime / $playbackStore.maxTime) * 100}%"
+                    class="absolute top-0 bottom-0 w-px bg-red-500/40 pointer-events-none z-10"
+                    style="left: {getPos(currentTime)}%"
                   ></div>
                 </div>
               </div>
             {/each}
           </div>
         {:else}
-          <div class="p-4 text-center">
+          <div class="p-6 text-center">
             <p class="text-slate-400 text-[10px] font-medium italic">
               Select seats or families on the map to compare their activity timelines
             </p>
@@ -208,7 +214,7 @@
 
 <style>
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.02);
@@ -224,8 +230,8 @@
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 24px;
-    height: 40px;
+    width: 20px;
+    height: 30px;
     cursor: pointer;
   }
 </style>

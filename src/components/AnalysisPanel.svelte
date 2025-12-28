@@ -8,7 +8,7 @@
   import { formatTime } from '../stores/playback';
 
   $: stats = $simulationStats;
-  $: hasSelection = $selectionStore.selectedSeats.length > 0 || $selectionStore.selectedFamilies.length > 0;
+  $: hasSelection = $selectionStore.selectedSeatIds.length > 0 || $selectionStore.selectedFamilyIds.length > 0;
 
   // Calculate seat utilization by type
   $: seatUtilByType = calculateSeatUtilization();
@@ -46,9 +46,9 @@
   $: selectedFamilyDetails = getSelectedFamilyDetails();
 
   function getSelectedFamilyDetails() {
-    if ($selectionStore.selectedFamilies.length === 0) return null;
+    if ($selectionStore.selectedFamilyIds.length === 0) return null;
 
-    const familyId = $selectionStore.selectedFamilies[0];
+    const familyId = $selectionStore.selectedFamilyIds[0];
     const customer = $customerConfigStore.find(c => c.familyId === familyId);
     if (!customer) return null;
 
@@ -64,9 +64,9 @@
   $: selectedSeatDetails = getSelectedSeatDetails();
 
   function getSelectedSeatDetails() {
-    if ($selectionStore.selectedSeats.length === 0) return null;
+    if ($selectionStore.selectedSeatIds.length === 0) return null;
 
-    const seatId = $selectionStore.selectedSeats[0];
+    const seatId = $selectionStore.selectedSeatIds[0];
     const config = $seatConfigStore.find(s => s.id === seatId);
 
     const occupancyHistory = $simulationStore.frames

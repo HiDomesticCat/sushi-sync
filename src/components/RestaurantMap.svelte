@@ -94,15 +94,19 @@
               
               <button
                 onclick={(e) => {
-                  // 點擊座位總是選擇座位
-                  selectSeat(seat.id, e.ctrlKey);
+                  // Determine if Ctrl or Command key is pressed
+                  const isMulti = e.ctrlKey || e.metaKey;
+                  
+                  // Always select the seat when clicking the square booth/bar seat
+                  selectSeat(seat.id, isMulti);
                 }}
                 onmouseenter={() => setHoveredSeat(seat.id)}
                 onmouseleave={() => clearHover()}
                 class="relative overflow-hidden transition-all duration-300 border-2 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1"
                 class:border-slate-300={!seat.occupiedBy}
                 class:border-transparent={seat.occupiedBy}
-                class:ring-2={$selectionStore.selectedSeats.includes(seat.id) ? 'ring-blue-500' : ''}
+                class:ring-4={$selectionStore.selectedSeatIds.includes(seat.id) ? 'ring-blue-500' : ''}
+                class:ring-offset-2={$selectionStore.selectedSeatIds.includes(seat.id)}
                 style="background-color: {getSeatColor(seat)}; width: {seatType === 'SINGLE' ? '3.5rem' : seatType === '4P' ? '6rem' : '8rem'}; height: {seatType === 'SINGLE' ? '3.5rem' : '6rem'};"
               >
                 
@@ -162,10 +166,12 @@
                     <div class="bg-blue-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:bg-blue-600 transition-colors"
                            role="button"
                            tabindex="0"
+                           class:ring-4={$selectionStore.selectedFamilyIds.includes(seat.occupiedBy) ? 'ring-yellow-400' : ''}
                            title={customer ? `Family #${seat.occupiedBy} | Size: ${customer.partySize} | Baby: ${customer.babyChairCount} | Wheel: ${customer.wheelchairCount} | Time: ${customer.estDiningTime}m` : `Family #${seat.occupiedBy}`}
                            onclick={(e) => {
                              e.stopPropagation();
-                             selectFamily(seat.occupiedBy!, false);
+                             const isMulti = e.ctrlKey || e.metaKey;
+                             selectFamily(seat.occupiedBy!, isMulti);
                            }}
                            onkeydown={(e) => {
                              if (e.key === 'Enter' || e.key === ' ') {

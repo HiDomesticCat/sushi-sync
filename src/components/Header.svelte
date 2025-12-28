@@ -6,6 +6,7 @@
   import { simulationStore, runSimulation, loadSimulationFrames, resetSimulation, isSimulationComplete, isSimulationRunning } from '../stores/simulation';
   import { customerConfigStore, seatConfigStore } from '../stores/config';
   import { setMaxTime } from '../stores/playback';
+  import { clearSelection } from '../stores/selection';
   import {
     openSeatConfigModal,
     openCustomerConfigModal,
@@ -44,6 +45,7 @@
   function handleReset() {
     reset();
     resetSimulation();
+    clearSelection();
   }
 </script>
 
