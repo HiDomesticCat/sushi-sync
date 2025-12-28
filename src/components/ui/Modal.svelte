@@ -49,6 +49,9 @@
       if (isOpen) {
         dialog.showModal();
         position = { x: 0, y: 0 }; // Reset position on open
+        // Ensure loading overlay is moved after modal opens
+        const overlay = document.getElementById('global-loading-overlay');
+        if (overlay) document.body.appendChild(overlay);
       } else {
         dialog.close();
       }

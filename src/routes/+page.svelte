@@ -7,6 +7,7 @@
   import ExportModal from '../components/ExportModal.svelte';
   import SeatConfigModal from '../components/SeatConfigModal.svelte';
   import CustomerConfigModal from '../components/CustomerConfigModal.svelte';
+  import LoadingOverlay from '../components/ui/LoadingOverlay.svelte';
   import { selectionStore } from '../stores/selection';
 </script>
 

@@ -122,8 +122,11 @@ export function loadCustomersFromCSV(csvContent: string): CustomerConfig[] {
   return customers;
 }
 
+import { simulationStore } from './simulation';
+
 export async function importCustomersFromCSV(csvContent: string) {
   try {
+    simulationStore.update(s => ({ ...s, loading: true }));
     console.log("importCustomersFromCSV: Calling Rust load_customers...");
     const customers = await invoke<any[]>('load_customers', { csvContent });
     console.log("importCustomersFromCSV: Rust returned", customers.length, "customers");
@@ -141,9 +144,11 @@ export async function importCustomersFromCSV(csvContent: string) {
     }));
     
     customerConfigStore.set(mappedCustomers);
+    simulationStore.update(s => ({ ...s, loading: false }));
     return true;
   } catch (err) {
     console.error("Failed to import customers:", err);
+    simulationStore.update(s => ({ ...s, loading: false }));
     alert("Import failed: " + err);
     return false;
   }
