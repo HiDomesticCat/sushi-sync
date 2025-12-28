@@ -31,8 +31,21 @@ export const currentFrame = derived(simulationStore, ($store) => {
 
 export const allEvents = derived(simulationStore, ($store) => {
   if ($store.frames.length === 0) return [];
-  const lastFrame = $store.frames[$store.frames.length - 1];
-  return lastFrame ? lastFrame.events : [];
+  // Collect all events from all frames to get a complete history
+  const events: any[] = [];
+  const seen = new Set();
+  
+  $store.frames.forEach(frame => {
+    frame.events.forEach(event => {
+      const key = `${event.timestamp}-${event.type}-${event.familyId}`;
+      if (!seen.has(key)) {
+        events.push(event);
+        seen.add(key);
+      }
+    });
+  });
+  
+  return events.sort((a, b) => a.timestamp - b.timestamp);
 });
 
 export const simulationStats = derived(simulationStore, ($store) => {
@@ -53,17 +66,9 @@ export const simulationStats = derived(simulationStore, ($store) => {
   }
   
   const lastFrame = frames[frames.length - 1];
-  const events = lastFrame?.events || [];
   const duration = lastFrame?.timestamp || 0;
-  const totalConflicts = events.filter(e => e.type === 'CONFLICT').length;
   
-  let maxWaitingCustomers = 0;
-  frames.forEach(frame => {
-    if (frame.waitingQueue && frame.waitingQueue.length > maxWaitingCustomers) {
-      maxWaitingCustomers = frame.waitingQueue.length;
-    }
-  });
-  
+  // Calculate seat utilization (average over all frames)
   let totalSeatFrames = 0;
   let occupiedSeatFrames = 0;
   
@@ -76,33 +81,23 @@ export const simulationStats = derived(simulationStore, ($store) => {
   
   const seatUtilization = totalSeatFrames > 0 ? (occupiedSeatFrames / totalSeatFrames) * 100 : 0;
   
-  let totalWaitTime = 0;
-  let seatedCustomers = 0;
-  events.forEach(event => {
-    if (event.type === 'SEATED') {
-      seatedCustomers++;
-      totalWaitTime += event.timestamp;
-    }
-  });
-  const averageWaitTime = seatedCustomers > 0 ? totalWaitTime / seatedCustomers : 0;
-  
   return {
-    totalCustomers: 0,
-    averageWaitTime,
+    totalCustomers: get(customerConfigStore).length,
+    averageWaitTime: 0,
     averageDiningTime: 0,
     tableUtilization: seatUtilization,
     totalFrames: frames.length,
-    totalEvents: events.length,
-    maxWaitingCustomers,
-    totalConflicts,
+    totalEvents: 0,
+    maxWaitingCustomers: 0,
+    totalConflicts: 0,
     duration,
     seatUtilization
   };
 });
 
 export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
-  // CSV format: id, arrival_time, type, party_size, baby_chair_count, wheelchair_count, est_dining_time
-  let csvContent = "id,arrival_time,type,party_size,baby_chair_count,wheelchair_count,est_dining_time\n";
+  // CSV format: id,arrival_time,type,party_size,baby_chair,wheel_chair,est_dining_time
+  let csvContent = "id,arrival_time,type,party_size,baby_chair,wheel_chair,est_dining_time\n";
   
   customerConfig.forEach(customer => {
     const diningTime = customer.estimatedDiningTime || customer.estDiningTime || 60;
@@ -123,7 +118,6 @@ export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
     // 1. Load customers into store
     console.log("runSimulation: Loading customers...");
     const customers = await invoke<any[]>('load_customers', { csvContent });
-    console.log("runSimulation: load_customers returned:", customers);
     
     const mappedCustomers: CustomerConfig[] = customers.map(c => ({
       id: Number(c.id),
@@ -133,8 +127,8 @@ export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
       partySize: Number(c.party_size),
       babyChairCount: Number(c.baby_chair_count),
       wheelchairCount: Number(c.wheelchair_count),
-      estimatedDiningTime: Number(c.est_dining_time),
-      estDiningTime: Number(c.est_dining_time)
+      estDiningTime: Number(c.est_dining_time),
+      estimatedDiningTime: Number(c.est_dining_time)
     }));
     customerConfigStore.set(mappedCustomers);
 

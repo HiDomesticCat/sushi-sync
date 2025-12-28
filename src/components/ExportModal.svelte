@@ -8,7 +8,6 @@
   import { simulationStore, simulationStats, allEvents } from '../stores/simulation';
   import { seatConfigStore, customerConfigStore } from '../stores/config';
   import { formatTime } from '../stores/playback';
-  import { derived } from 'svelte/store';
 
   let copied = false;
   $: stats = $simulationStats;
@@ -36,47 +35,56 @@
   }
 
   function exportTXT() {
-    let output = '═══════════════════════════════════════════\n';
-    output += '          SUSHI SYNC SIMULATION REPORT        \n';
-    output += '═══════════════════════════════════════════\n\n';
+    let output = "[Thread ID] [Time] [Event Type] ID: {id} | Requirements: {Resource Requirements} | Result | Remaining Resources: S={Single}, 4P={4P Sofa}, 6P={6P Sofa}, B={Baby Chair}, W={Wheelchair}\n\n";
+    
+    // Initial resources
+    let s = 10, p4 = 4, p6 = 2, b = 4, w = 2;
 
-    output += `Export Date: ${new Date().toLocaleString()}\n`;
-    output += `Simulation Duration: ${formatTime(stats.duration)}\n\n`;
-
-    output += '── CONFIGURATION ──────────────────────────\n';
-    output += `Total Seats: ${$seatConfigStore.length}\n`;
-    output += `  • Single: ${$seatConfigStore.filter(s => s.type === 'SINGLE').length}\n`;
-    output += `  • 4-Person: ${$seatConfigStore.filter(s => s.type === '4P').length}\n`;
-    output += `  • 6-Person: ${$seatConfigStore.filter(s => s.type === '6P').length}\n`;
-    output += `Total Customers: ${$customerConfigStore.length}\n\n`;
-
-    output += '── STATISTICS ─────────────────────────────\n';
-    output += `Total Events: ${stats.totalEvents}\n`;
-    output += `Max Waiting: ${stats.maxWaitingCustomers}\n`;
-    output += `Average Wait Time: ${formatTime(stats.averageWaitTime)}\n`;
-    output += `Seat Utilization: ${stats.seatUtilization.toFixed(1)}%\n`;
-    output += `Conflicts: ${stats.totalConflicts}\n\n`;
-
-    output += '── EVENT LOG ──────────────────────────────\n';
     $allEvents.forEach(event => {
-      output += `[${formatTime(event.timestamp)}] ${event.type.padEnd(10)} | ${event.message}\n`;
-    });
+      const customer = $customerConfigStore.find(c => c.familyId === event.familyId);
+      if (!customer) return;
 
-    output += '\n═══════════════════════════════════════════\n';
-    output += '               END OF REPORT                 \n';
-    output += '═══════════════════════════════════════════\n';
+      const threadId = Math.floor(Math.random() * 900000) + 100000;
+      const type = event.type;
+      const id = event.familyId;
+      
+      let actionResult = "";
+      let requirements = `${customer.partySize} seats`;
+      if (customer.babyChairCount > 0) requirements += `, ${customer.babyChairCount} baby_chair`;
+      if (customer.wheelchairCount > 0) requirements += `, ${customer.wheelchairCount} wheelchair`;
+
+      if (type === 'ARRIVAL') {
+        actionResult = "arrived";
+      } else if (type === 'SEATED') {
+        actionResult = `seated, id:[${event.seatId || '?'}]`;
+        if (event.seatId?.startsWith('S')) s--;
+        else if (event.seatId?.startsWith('4P')) p4--;
+        else if (event.seatId?.startsWith('6P')) p6--;
+        b -= customer.babyChairCount;
+        w -= customer.wheelchairCount;
+      } else if (type === 'LEFT') {
+        actionResult = `release, id:[${event.seatId || '?'}]`;
+        if (event.seatId?.startsWith('S')) s++;
+        else if (event.seatId?.startsWith('4P')) p4++;
+        else if (event.seatId?.startsWith('6P')) p6++;
+        b += customer.babyChairCount;
+        w += customer.wheelchairCount;
+      }
+
+      output += `[${threadId}] [${event.timestamp}] [${customer.type}] ID: ${id} | Requirements: ${requirements} | ${actionResult} | Remaining: S=${s}, 4P=${p4}, 6P=${p6}, B=${b}, W=${w}\n`;
+    });
 
     downloadFile(output, 'sushi-sync-report.txt', 'text/plain');
   }
 
   function exportCSV() {
-    let csv = 'timestamp,type,familyId,customerId,seatId,message\n';
+    let csv = 'id,arrival_time,type,party_size,baby_chair,wheel_chair,est_dining_time\n';
 
-    $allEvents.forEach(event => {
-      csv += `${event.timestamp},${event.type},${event.familyId},${event.customerId},${event.seatId || ''},\"${event.message}\"\n`;
+    $customerConfigStore.forEach(c => {
+      csv += `${c.id},${c.arrivalTime},${c.type},${c.partySize},${c.babyChairCount},${c.wheelchairCount},${c.estDiningTime}\n`;
     });
 
-    downloadFile(csv, 'sushi-sync-events.csv', 'text/csv');
+    downloadFile(csv, 'customers.csv', 'text/csv');
   }
 
   function downloadFile(content: string, filename: string, mimeType: string) {
@@ -101,28 +109,29 @@
   isOpen={$uiStore.isExportModalOpen}
   title="📤 Export Data"
   onClose={closeExportModal}
+  size="lg"
 >
   <div class="space-y-6">
 
     <!-- Summary -->
     <Card variant="bordered" padding="md">
-      <h3 class="text-sm font-medium text-muted mb-3">Export Summary</h3>
+      <h3 class="text-sm font-medium text-nezumi mb-3">Export Summary</h3>
       <div class="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span class="text-muted">Duration:</span>
-          <span class="text-primary ml-2">{formatTime(stats.duration)}</span>
+        <div class="flex items-center justify-between bg-washi p-2 rounded border border-hinoki/20">
+          <span class="text-nezumi">Duration:</span>
+          <span class="text-ai font-mono font-bold">{formatTime(stats.duration)}</span>
         </div>
-        <div>
-          <span class="text-muted">Events:</span>
-          <span class="text-primary ml-2">{stats.totalEvents}</span>
+        <div class="flex items-center justify-between bg-washi p-2 rounded border border-hinoki/20">
+          <span class="text-nezumi">Events:</span>
+          <span class="text-ai font-mono font-bold">{$allEvents.length}</span>
         </div>
-        <div>
-          <span class="text-muted">Seats:</span>
-          <span class="text-primary ml-2">{$seatConfigStore.length}</span>
+        <div class="flex items-center justify-between bg-washi p-2 rounded border border-hinoki/20">
+          <span class="text-nezumi">Seats:</span>
+          <span class="text-ai font-mono font-bold">{$seatConfigStore.length}</span>
         </div>
-        <div>
-          <span class="text-muted">Customers:</span>
-          <span class="text-primary ml-2">{$customerConfigStore.length}</span>
+        <div class="flex items-center justify-between bg-washi p-2 rounded border border-hinoki/20">
+          <span class="text-nezumi">Customers:</span>
+          <span class="text-ai font-mono font-bold">{$customerConfigStore.length}</span>
         </div>
       </div>
     </Card>
@@ -133,41 +142,41 @@
 
       <button
         onclick={exportJSON}
-        class="w-full flex items-center gap-4 p-4 bg-sumi rounded-lg border border-hinoki hover:border-ocean transition-colors text-left"
+        class="w-full flex items-center gap-4 p-4 bg-white rounded-lg border border-hinoki hover:border-ocean transition-all hover:shadow-md group"
       >
-        <div class="w-12 h-12 bg-ocean/20 rounded-lg flex items-center justify-center">
+        <div class="w-12 h-12 bg-ocean/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
           <FileText class="w-6 h-6 text-ocean" />
         </div>
         <div class="flex-1">
-          <div class="font-medium text-primary">JSON Export</div>
-          <div class="text-xs text-muted">Complete data with all configurations and events</div>
+          <div class="font-medium text-sumi">JSON Export</div>
+          <div class="text-xs text-nezumi">Complete data with all configurations and events</div>
         </div>
         <Badge variant="info" size="sm">Recommended</Badge>
       </button>
 
       <button
         onclick={exportTXT}
-        class="w-full flex items-center gap-4 p-4 bg-sumi rounded-lg border border-hinoki hover:border-matcha transition-colors text-left"
+        class="w-full flex items-center gap-4 p-4 bg-white rounded-lg border border-hinoki hover:border-matcha transition-all hover:shadow-md group"
       >
-        <div class="w-12 h-12 bg-matcha/20 rounded-lg flex items-center justify-center">
+        <div class="w-12 h-12 bg-matcha/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
           <FileText class="w-6 h-6 text-matcha" />
         </div>
         <div class="flex-1">
-          <div class="font-medium text-primary">Text Report</div>
-          <div class="text-xs text-muted">Human-readable formatted report</div>
+          <div class="font-medium text-sumi">Text Report (Rule Format)</div>
+          <div class="text-xs text-nezumi">Formatted according to Version2/output_rule.txt</div>
         </div>
       </button>
 
       <button
         onclick={exportCSV}
-        class="w-full flex items-center gap-4 p-4 bg-sumi rounded-lg border border-hinoki hover:border-salmon transition-colors text-left"
+        class="w-full flex items-center gap-4 p-4 bg-white rounded-lg border border-hinoki hover:border-salmon transition-all hover:shadow-md group"
       >
-        <div class="w-12 h-12 bg-salmon/20 rounded-lg flex items-center justify-center">
+        <div class="w-12 h-12 bg-salmon/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
           <FileSpreadsheet class="w-6 h-6 text-salmon" />
         </div>
         <div class="flex-1">
-          <div class="font-medium text-primary">CSV Events</div>
-          <div class="text-xs text-muted">Event log for spreadsheet analysis</div>
+          <div class="font-medium text-sumi">CSV Customers</div>
+          <div class="text-xs text-nezumi">Customer list in Version2/base.csv format</div>
         </div>
       </button>
     </div>
@@ -187,6 +196,8 @@
   </div>
 
   {#snippet footer()}
-    <Button variant="primary" onclick={closeExportModal}>Close</Button>
+    <div class="flex justify-end w-full">
+      <Button variant="primary" onclick={closeExportModal}>Close</Button>
+    </div>
   {/snippet}
 </Modal>

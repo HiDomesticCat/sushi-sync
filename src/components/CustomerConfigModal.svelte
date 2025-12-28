@@ -113,13 +113,12 @@
   }
 
   function getTypeIcon(type: string): string {
-    switch (type) {
-      case 'INDIVIDUAL': return '👤';
-      case 'FAMILY': return '👨‍👩‍👧';
-      case 'WITH_BABY': return '👶';
-      case 'WHEELCHAIR': return '♿';
-      default: return '👤';
-    }
+    const upperType = type.toUpperCase();
+    if (upperType.includes('INDIVIDUAL')) return '👤';
+    if (upperType.includes('FAMILY')) return '👨‍👩‍👧';
+    if (upperType.includes('BABY')) return '👶';
+    if (upperType.includes('WHEELCHAIR')) return '♿';
+    return '👤';
   }
 </script>
 

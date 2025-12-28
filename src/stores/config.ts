@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import type { SeatConfig, CustomerConfig } from '../types';
 
@@ -8,21 +8,24 @@ const defaultSeats: SeatConfig[] = [
   ...Array.from({ length: 10 }, (_, i) => ({
     id: `S${String(i + 1).padStart(2, '0')}`,
     type: 'SINGLE' as const,
-    canAttachBabyChair: i >= 5, // Last 5 can attach baby chairs
+    x: 0,
+    y: 0,
     isWheelchairAccessible: i < 2 // First 2 are wheelchair accessible
   })),
   // 4-person tables (4P01-4P04)
   ...Array.from({ length: 4 }, (_, i) => ({
     id: `4P${String(i + 1).padStart(2, '0')}`,
     type: '4P' as const,
-    canAttachBabyChair: true,
+    x: 0,
+    y: 0,
     isWheelchairAccessible: i < 2
   })),
   // 6-person tables (6P01-6P02)
   ...Array.from({ length: 2 }, (_, i) => ({
     id: `6P${String(i + 1).padStart(2, '0')}`,
     type: '6P' as const,
-    canAttachBabyChair: true,
+    x: 0,
+    y: 0,
     isWheelchairAccessible: i === 0
   }))
 ];
@@ -55,10 +58,6 @@ export const wheelchairAccessibleSeats = derived(seatConfigStore, ($seats) => {
   return $seats.filter(s => s.isWheelchairAccessible);
 });
 
-export const babyChairCapableSeats = derived(seatConfigStore, ($seats) => {
-  return $seats.filter(s => s.canAttachBabyChair);
-});
-
 // ===== Customer Helper Functions =====
 export function addCustomer(customer: CustomerConfig) {
   customerConfigStore.update(customers => [...customers, customer]);
@@ -70,7 +69,16 @@ export function removeCustomer(id: number) {
 
 export function updateCustomer(id: number, updates: Partial<CustomerConfig>) {
   customerConfigStore.update(customers =>
-    customers.map(c => c.id === id ? { ...c, ...updates } : c)
+    customers.map(c => {
+      if (c.id === id) {
+        const updated = { ...c, ...updates };
+        // Sync both dining time fields
+        if (updates.estimatedDiningTime) updated.estDiningTime = updates.estimatedDiningTime;
+        if (updates.estDiningTime) updated.estimatedDiningTime = updates.estDiningTime;
+        return updated;
+      }
+      return c;
+    })
   );
 }
 
@@ -86,17 +94,26 @@ export function loadCustomersFromCSV(csvContent: string): CustomerConfig[] {
   
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(',').map(v => v.trim());
-    if (values.length < 8) continue;
+    if (values.length < 7) continue;
     
+    const id = parseInt(values[0]) || i;
+    const arrivalTime = parseInt(values[1]) || 0;
+    const type = values[2] || 'INDIVIDUAL';
+    const partySize = parseInt(values[3]) || 1;
+    const babyChairCount = parseInt(values[4]) || 0;
+    const wheelchairCount = parseInt(values[5]) || 0;
+    const diningTime = parseInt(values[6]) || 30;
+
     const customer: CustomerConfig = {
-      id: parseInt(values[0]) || i,
-      familyId: parseInt(values[1]) || i,
-      arrivalTime: parseInt(values[2]) || 0,
-      type: (values[3] as CustomerConfig['type']) || 'INDIVIDUAL',
-      partySize: parseInt(values[4]) || 1,
-      babyChairCount: parseInt(values[5]) || 0,
-      wheelchairCount: parseInt(values[6]) || 0,
-      estimatedDiningTime: parseInt(values[7]) || 30
+      id,
+      familyId: id,
+      arrivalTime,
+      type,
+      partySize,
+      babyChairCount,
+      wheelchairCount,
+      estDiningTime: diningTime,
+      estimatedDiningTime: diningTime
     };
     
     customers.push(customer);
@@ -105,19 +122,40 @@ export function loadCustomersFromCSV(csvContent: string): CustomerConfig[] {
   return customers;
 }
 
-export function importCustomersFromCSV(csvContent: string) {
-  const customers = loadCustomersFromCSV(csvContent);
-  customerConfigStore.set(customers);
+export async function importCustomersFromCSV(csvContent: string) {
+  try {
+    console.log("importCustomersFromCSV: Calling Rust load_customers...");
+    const customers = await invoke<any[]>('load_customers', { csvContent });
+    console.log("importCustomersFromCSV: Rust returned", customers.length, "customers");
+    
+    const mappedCustomers: CustomerConfig[] = customers.map(c => ({
+      id: Number(c.id),
+      familyId: Number(c.family_id),
+      arrivalTime: Number(c.arrival_time),
+      type: String(c.type_ || c.type || 'INDIVIDUAL'),
+      partySize: Number(c.party_size),
+      babyChairCount: Number(c.baby_chair_count),
+      wheelchairCount: Number(c.wheelchair_count),
+      estDiningTime: Number(c.est_dining_time),
+      estimatedDiningTime: Number(c.est_dining_time)
+    }));
+    
+    customerConfigStore.set(mappedCustomers);
+    return true;
+  } catch (err) {
+    console.error("Failed to import customers:", err);
+    alert("Import failed: " + err);
+    return false;
+  }
 }
 
 export function exportCustomersToCSV(): string {
-  let csv = 'id,familyId,arrivalTime,type,partySize,babyChairCount,wheelchairCount,estimatedDiningTime\n';
+  let csv = 'id,arrival_time,type,party_size,baby_chair,wheel_chair,est_dining_time\n';
   
-  customerConfigStore.subscribe(customers => {
-    customers.forEach(c => {
-      csv += `${c.id},${c.familyId},${c.arrivalTime},${c.type},${c.partySize},${c.babyChairCount},${c.wheelchairCount},${c.estimatedDiningTime}\n`;
-    });
-  })();
+  const customers = get(customerConfigStore);
+  customers.forEach(c => {
+    csv += `${c.id},${c.arrivalTime},${c.type},${c.partySize},${c.babyChairCount},${c.wheelchairCount},${c.estDiningTime}\n`;
+  });
   
   return csv;
 }
@@ -127,14 +165,15 @@ export async function generateCustomersInRust(count: number, maxArrivalTime: num
     const customers = await invoke<any[]>('generate_customers', { count, maxArrivalTime });
     
     const mappedCustomers: CustomerConfig[] = customers.map(c => ({
-      id: c.id,
-      familyId: c.family_id,
-      arrivalTime: c.arrival_time,
-      type: c.type,
-      partySize: c.party_size,
-      babyChairCount: c.babyChairCount,
-      wheelchairCount: c.wheelchairCount,
-      estimatedDiningTime: c.est_dining_time
+      id: Number(c.id),
+      familyId: Number(c.family_id),
+      arrivalTime: Number(c.arrival_time),
+      type: String(c.type_ || c.type || 'INDIVIDUAL'),
+      partySize: Number(c.party_size),
+      babyChairCount: Number(c.baby_chair_count),
+      wheelchairCount: Number(c.wheelchair_count),
+      estDiningTime: Number(c.est_dining_time),
+      estimatedDiningTime: Number(c.est_dining_time)
     }));
     
     customerConfigStore.set(mappedCustomers);
