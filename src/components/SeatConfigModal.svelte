@@ -2,14 +2,17 @@
   import Modal from './ui/Modal.svelte';
   import Card from './ui/Card.svelte';
   import Button from './ui/Button.svelte';
-  import { seatConfigStore, resetSeatsToDefault } from '../stores/config';
+  import { seatConfigStore, resetSeatsToDefault, resourceLimitsStore } from '../stores/config';
   import { uiStore, closeSeatConfigModal } from '../stores/ui';
   import type { SeatConfig } from '../types';
+  import { get } from 'svelte/store';
 
   // Local state
   let singleCount = $state(10);
   let fourPersonCount = $state(4);
   let sixPersonCount = $state(2);
+  let babyChairLimit = $state(4);
+  let wheelchairLimit = $state(2);
 
   // Computed values
   const totalSeats = $derived(singleCount + fourPersonCount + sixPersonCount);
@@ -31,6 +34,10 @@
     singleCount = single.length;
     fourPersonCount = fourP.length;
     sixPersonCount = sixP.length;
+
+    const limits = get(resourceLimitsStore);
+    babyChairLimit = limits.babyChairs;
+    wheelchairLimit = limits.wheelchairs;
   }
 
   function generateSeats(): SeatConfig[] {
@@ -40,7 +47,7 @@
       seats.push({
         id: `S${String(i).padStart(2, '0')}`,
         type: 'SINGLE',
-        canAttachBabyChair: true, // Default support
+        x: 0, y: 0,
         isWheelchairAccessible: false // Bar not for wheelchair
       });
     }
@@ -49,8 +56,8 @@
       seats.push({
         id: `4P${String(i).padStart(2, '0')}`,
         type: '4P',
-        canAttachBabyChair: true,
-        isWheelchairAccessible: true // Sofa is accessible
+        x: 0, y: 0,
+        isWheelchairAccessible: i <= 2 // Sofa is accessible
       });
     }
 
@@ -58,8 +65,8 @@
       seats.push({
         id: `6P${String(i).padStart(2, '0')}`,
         type: '6P',
-        canAttachBabyChair: true,
-        isWheelchairAccessible: true // Sofa is accessible
+        x: 0, y: 0,
+        isWheelchairAccessible: i === 1 // Sofa is accessible
       });
     }
 
@@ -68,6 +75,10 @@
 
   function handleApply() {
     seatConfigStore.set(generateSeats());
+    resourceLimitsStore.set({
+      babyChairs: babyChairLimit,
+      wheelchairs: wheelchairLimit
+    });
     closeSeatConfigModal();
   }
 
@@ -75,6 +86,8 @@
     singleCount = 10;
     fourPersonCount = 4;
     sixPersonCount = 2;
+    babyChairLimit = 4;
+    wheelchairLimit = 2;
   }
 </script>
 
@@ -85,6 +98,41 @@
   size="lg"
 >
   <div class="space-y-6">
+
+    <!-- Resource Limits -->
+    <Card variant="elevated" padding="md" class="bg-pink-50/30 border-pink-200">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-2xl">🍼</span>
+        <h3 class="text-lg font-semibold text-pink-700">Global Resource Limits</h3>
+      </div>
+
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-pink-600 mb-2">
+            Baby Chairs
+            <input
+              type="number"
+              bind:value={babyChairLimit}
+              min="0"
+              max="20"
+              class="w-full mt-1 px-3 py-2 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none"
+            />
+          </label>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-blue-600 mb-2">
+            Wheelchair Spots
+            <input
+              type="number"
+              bind:value={wheelchairLimit}
+              min="0"
+              max="10"
+              class="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </label>
+        </div>
+      </div>
+    </Card>
 
     <!-- Single Seats -->
     <Card variant="bordered" padding="md">

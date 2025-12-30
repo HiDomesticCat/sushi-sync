@@ -20,6 +20,7 @@
     return {
       ...config,
       occupiedBy: dynamicSeat?.occupiedBy ?? null,
+      occupantType: dynamicSeat?.occupantType ?? null,
       babyChairCount: dynamicSeat?.babyChairCount ?? 0
     };
   })) as Seat[];
@@ -52,10 +53,11 @@
   function isSubSlotFilled(seat: Seat, index: number): boolean {
     if (!seat.occupiedBy) return false;
     const customer = getCustomerInfo(seat.occupiedBy);
-    // If occupied, fill slots based on partySize
-    // For families with babies, we also count the babies as needing slots
-    const totalPeople = customer ? (customer.partySize + customer.babyChairCount) : 1;
-    return index < totalPeople;
+    if (!customer) return index === 0;
+    
+    // partySize 包含所有人，但嬰兒不佔用獨立座位小方塊
+    const adultCount = Math.max(1, customer.partySize - customer.babyChairCount);
+    return index < adultCount;
   }
 
 </script>
@@ -119,20 +121,29 @@
                       <div class="relative rounded-md transition-all duration-500 border border-black/5"
                            style="background-color: {isSubSlotFilled(seat, idx) ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.03)'}">
                         
-                        {#if isSubSlotFilled(seat, idx) && customer}
-                          <!-- Wheelchair icon inside sub-slot -->
-                          {#if customer.wheelchairCount > 0 && idx === 0}
-                            <div class="absolute inset-0 flex items-center justify-center">
+                        {#if isSubSlotFilled(seat, idx)}
+                          <div class="absolute inset-0 flex items-center justify-center">
+                            {#if seat.occupantType === 'WHEELCHAIR' && idx === 0}
                               <Accessibility class="w-4 h-4 text-white/80" />
-                            </div>
-                          {/if}
+                            {:else}
+                              <User class="w-3 h-3 text-white/60" />
+                            {/if}
+                          </div>
 
-                          <!-- Baby chair bubble on sub-slot -->
-                          {#if customer.babyChairCount > 0 && idx < customer.babyChairCount}
-                            <div class="absolute -top-1 -right-1 z-[100]">
+                          <!-- Baby chair bubble on adult seat (Distributed among adults) -->
+                          {@const adultCount = customer ? Math.max(1, customer.partySize - customer.babyChairCount) : 1}
+                          {@const baseBaby = customer ? Math.floor(customer.babyChairCount / adultCount) : 0}
+                          {@const extraBaby = customer ? (customer.babyChairCount % adultCount) : 0}
+                          {@const myBabyCount = idx < adultCount ? (baseBaby + (idx < extraBaby ? 1 : 0)) : 0}
+
+                          {#if myBabyCount > 0}
+                            <div class="absolute -top-2 -right-2 z-[100]">
                               <div class="bg-pink-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm border border-white"
-                                   title={`Baby Chair (Total: ${customer.babyChairCount})`}>
+                                   title={`Baby Chairs: ${myBabyCount}`}>
                                 <Baby class="w-2 h-2" />
+                                {#if myBabyCount > 1}
+                                  <span class="ml-0.5">{myBabyCount}</span>
+                                {/if}
                               </div>
                             </div>
                           {/if}
@@ -143,16 +154,24 @@
                 {/if}
 
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  {#if seat.occupiedBy && customer}
+                  {#if seat.occupiedBy}
                       {#if seatType === 'SINGLE'}
-                        {#if customer.wheelchairCount > 0}
+                        {#if seat.occupantType === 'WHEELCHAIR'}
                            <Accessibility class="w-8 h-8 text-white drop-shadow-md animate-pulse" />
                         {:else}
-                           {#if customer.partySize > 1}
-                             <Users class="w-8 h-8 text-white drop-shadow-md" />
-                           {:else}
-                             <User class="w-6 h-6 text-white drop-shadow-md" />
-                           {/if}
+                           <User class="w-8 h-8 text-white drop-shadow-md" />
+                        {/if}
+
+                        <!-- Baby chair bubble for single seat -->
+                        {#if seat.babyChairCount > 0}
+                          <div class="absolute -top-1 -right-1 z-[100]">
+                            <div class="bg-pink-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                              <Baby class="w-3 h-3" />
+                              {#if seat.babyChairCount > 1}
+                                <span class="ml-0.5">{seat.babyChairCount}</span>
+                              {/if}
+                            </div>
+                          </div>
                         {/if}
                       {/if}
                   {:else}
@@ -209,10 +228,17 @@
         <div class="flex flex-wrap gap-2">
           {#each waitingQueue as customer}
             {@const color = familyColors.get(customer.familyId) || '#cbd5e1'}
-            <div class="px-3 py-1.5 bg-white border-2 border-dashed border-slate-300 rounded-lg text-xs font-mono text-slate-500 flex items-center gap-2">
+            <button 
+              class="px-3 py-1.5 bg-white border-2 border-dashed border-slate-300 rounded-lg text-xs font-mono text-slate-500 flex items-center gap-2 hover:border-primary hover:text-primary transition-colors cursor-help"
+              title={`Family #${customer.familyId} | Size: ${customer.partySize} | Baby: ${customer.babyChairCount} | Wheel: ${customer.wheelchairCount} | Arrival: ${customer.arrivalTime}s`}
+              onclick={() => {
+                const isMulti = false; // Default to single selection
+                selectFamily(customer.familyId, isMulti);
+              }}
+            >
                <div class="w-2 h-2 rounded-full" style="background-color: {color}"></div>
                F{customer.familyId}
-            </div>
+            </button>
           {/each}
         </div>
       </div>

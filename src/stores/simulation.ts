@@ -1,7 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import type { SimulationFrame, CustomerConfig, SeatConfig } from '../types';
-import { customerConfigStore, seatConfigStore, exportCustomersToCSV } from './config';
+import { customerConfigStore, seatConfigStore, exportCustomersToCSV, resourceLimitsStore } from './config';
 
 // ===== 狀態介面定義 =====
 interface SimulationState {
@@ -158,9 +158,12 @@ export const actions = {
       customerConfigStore.set(customers);
 
       // 3. 執行模擬
+      const limits = get(resourceLimitsStore);
       const frames = await invoke<SimulationFrame[]>('start_simulation', { 
         csvContent: finalCsvContent,
-        seatConfigJson 
+        seatConfigJson,
+        babyChairs: limits.babyChairs,
+        wheelchairs: limits.wheelchairs
       });
 
       console.log("Simulation finished:", frames.length, "frames generated.");

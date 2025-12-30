@@ -33,6 +33,7 @@ pub struct Seat {
     #[serde(rename = "type")]
     pub type_: String,
     pub occupied_by: Option<u32>,
+    pub occupant_type: Option<String>, // 新增：佔用者類型 (BABY, WHEELCHAIR, NORMAL)
     pub baby_chair_count: u32,
     pub is_wheelchair_accessible: bool,
 }

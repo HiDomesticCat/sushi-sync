@@ -32,6 +32,12 @@ const defaultSeats: SeatConfig[] = [
 export const seatConfigStore = writable<SeatConfig[]>(defaultSeats);
 export const customerConfigStore = writable<CustomerConfig[]>([]);
 
+// 全域資源限制
+export const resourceLimitsStore = writable({
+  babyChairs: 4,
+  wheelchairs: 2
+});
+
 // ===== Derived Stores =====
 export const totalCapacity = derived(seatConfigStore, ($seats) => {
   return $seats.reduce((total, seat) => {

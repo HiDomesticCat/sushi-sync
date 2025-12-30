@@ -28,6 +28,7 @@ export interface Seat {
   id: string;
   type: string;
   occupiedBy: number | null; // Stores Family ID
+  occupantType: string | null; // BABY, WHEELCHAIR, NORMAL
   babyChairCount: number;
   isWheelchairAccessible: boolean;
 }
