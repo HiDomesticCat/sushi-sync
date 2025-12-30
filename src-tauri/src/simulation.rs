@@ -6,8 +6,6 @@ use std::thread;
 use std::time::Duration;
 
 // 根據題目範例設定預設資源
-const DEFAULT_BABY_CHAIRS: i32 = 4;  // 依據需求文件截圖
-const DEFAULT_WHEELCHAIRS: i32 = 2;  
 const WAIT_TIMEOUT_MS: u64 = 3600000; // 增加到 1 小時，避免過早逾時
 
 struct SushiResources {
@@ -38,7 +36,7 @@ enum Action {
     Wait,   // ✅ 新增：符合題目要求的等待事件
     Sit(String),
     Leave(String),
-    Error(String),
+    Error,
 }
 
 // 輔助函式：產生符合 output_rule.txt 的詳細 Log
@@ -133,7 +131,7 @@ pub fn start_simulation(
             }
 
             // 2. Wait & Allocate (等待與分配)
-            let mut seated_seat_ids: Vec<String> = Vec::new();
+            let seated_seat_ids: Vec<String>;
             let mut res = lock.lock().unwrap();
             let mut has_logged_wait = false; // 避免重複記錄 wait
             
@@ -177,7 +175,7 @@ pub fn start_simulation(
                         time: customer.arrival_time + 999, 
                         sequence: seq,
                         family_id: customer.family_id,
-                        action: Action::Error("TIMEOUT".to_string()), log_message: log,
+                        action: Action::Error, log_message: log,
                     });
                     return;
                 }
@@ -397,7 +395,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                         }
                     }
                 },
-                Action::Error(_) => {
+                Action::Error => {
                     waiting_family_ids.remove(&evt.family_id);
                 }
             }
@@ -414,7 +412,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                     Action::Wait => "WAITING".into(), 
                     Action::Sit(_) => "SEATED".into(),
                     Action::Leave(_) => "LEFT".into(),
-                    Action::Error(_) => "ERROR".into(),
+                    Action::Error => "ERROR".into(),
                 },
                 customer_id: e.family_id,
                 family_id: e.family_id,

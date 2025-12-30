@@ -7,6 +7,7 @@
   import { Plus, Trash2, Upload, Download, Wand2 } from 'lucide-svelte';
   import { customerConfigStore, addCustomer, removeCustomer, clearCustomers, importCustomersFromCSV, exportCustomersToCSV, generateCustomersInRust } from '../stores/config';
   import { uiStore, closeCustomerConfigModal } from '../stores/ui';
+  import { actions as simActions } from '../stores/simulation';
   import type { CustomerConfig, CustomerType } from '../types';
 
   // Form state
@@ -67,10 +68,12 @@
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
+        simActions.setLoading(true);
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
           const content = event.target?.result as string;
-          importCustomersFromCSV(content);
+          await importCustomersFromCSV(content);
+          simActions.setLoading(false);
         };
         reader.readAsText(file);
       }
@@ -78,7 +81,9 @@
     input.click();
   }
 
-  function handleExport() {
+  async function handleExport() {
+    simActions.setLoading(true);
+    await new Promise(r => setTimeout(r, 500));
     const csv = exportCustomersToCSV();
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -87,6 +92,7 @@
     a.download = 'customers.csv';
     a.click();
     URL.revokeObjectURL(url);
+    simActions.setLoading(false);
   }
 
   async function handleGenerate() {
@@ -95,7 +101,9 @@
     const maxTime = parseInt(prompt("Max arrival time (seconds)?", "3600") || "0");
     if (maxTime <= 0) return;
     
+    simActions.setLoading(true);
     await generateCustomersInRust(count, maxTime);
+    simActions.setLoading(false);
   }
 
   function addSampleData() {
@@ -166,12 +174,12 @@
 
         <div>
           <label class="block text-sm font-medium text-text-main mb-1">
-            Duration (min)
+            Duration (sec)
             <input
               type="number"
               bind:value={diningTime}
               min="10"
-              max="120"
+              max="3600"
               class="w-full px-3 py-2 bg-bg-panel border-2 border-border rounded-lg text-text-main"
             />
           </label>
@@ -237,9 +245,9 @@
               <tr class="text-left text-text-muted border-b border-border">
                 <th class="py-2 px-2">ID</th>
                 <th class="py-2 px-2">Type</th>
-                <th class="py-2 px-2">Arrival</th>
+                <th class="py-2 px-2">Arrival (s)</th>
                 <th class="py-2 px-2">Party</th>
-                <th class="py-2 px-2">Duration</th>
+                <th class="py-2 px-2">Duration (s)</th>
                 <th class="py-2 px-2">Needs</th>
                 <th class="py-2 px-2"></th>
               </tr>
@@ -253,7 +261,7 @@
                   </td>
                   <td class="py-2 px-2">{customer.arrivalTime}s</td>
                   <td class="py-2 px-2">{customer.partySize}</td>
-                  <td class="py-2 px-2">{customer.estDiningTime}m</td>
+                  <td class="py-2 px-2">{customer.estDiningTime}s</td>
                   <td class="py-2 px-2">
                     {#if customer.babyChairCount > 0}<Badge variant="info" size="sm">👶 {customer.babyChairCount}</Badge>{/if}
                     {#if customer.wheelchairCount > 0}<Badge variant="waiting" size="sm">♿ {customer.wheelchairCount}</Badge>{/if}

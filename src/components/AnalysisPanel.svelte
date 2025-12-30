@@ -10,37 +10,7 @@
   $: stats = $simulationStats;
   $: hasSelection = $selectionStore.selectedSeatIds.length > 0 || $selectionStore.selectedFamilyIds.length > 0;
 
-  // Calculate seat utilization by type
-  $: seatUtilByType = calculateSeatUtilization();
 
-  function calculateSeatUtilization() {
-    if ($simulationStore.frames.length === 0) return { single: 0, fourP: 0, sixP: 0 };
-
-    let singleTotal = 0, singleOccupied = 0;
-    let fourPTotal = 0, fourPOccupied = 0;
-    let sixPTotal = 0, sixPOccupied = 0;
-
-    $simulationStore.frames.forEach(frame => {
-      frame.seats.forEach(seat => {
-        if (seat.type === 'SINGLE') {
-          singleTotal++;
-          if (seat.occupiedBy !== null) singleOccupied++;
-        } else if (seat.type === '4P') {
-          fourPTotal++;
-          if (seat.occupiedBy !== null) fourPOccupied++;
-        } else if (seat.type === '6P') {
-          sixPTotal++;
-          if (seat.occupiedBy !== null) sixPOccupied++;
-        }
-      });
-    });
-
-    return {
-      single: singleTotal > 0 ? Math.round((singleOccupied / singleTotal) * 100) : 0,
-      fourP: fourPTotal > 0 ? Math.round((fourPOccupied / fourPTotal) * 100) : 0,
-      sixP: sixPTotal > 0 ? Math.round((sixPOccupied / sixPTotal) * 100) : 0
-    };
-  }
 
   // Get selected family details
   $: selectedFamilyDetails = getSelectedFamilyDetails();
@@ -90,74 +60,74 @@
   </div>
 
   {#if $isSimulationComplete}
-    <!-- Statistics Grid -->
-    <div class="grid grid-cols-2 gap-3 mb-6">
-      <div class="bg-sumi rounded-lg p-3">
-        <div class="flex items-center gap-2 text-muted mb-1">
-          <Clock class="w-4 h-4" />
-          <span class="text-xs">Duration</span>
+    <!-- OS-Style Statistics Grid -->
+    <div class="grid grid-cols-1 gap-4 mb-8">
+      <!-- Throughput Card -->
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <div class="p-2 bg-blue-50 rounded-lg">
+              <Clock class="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Throughput</div>
+              <div class="text-[10px] text-slate-400">系統吞吐量 (每秒處理家庭數)</div>
+            </div>
+          </div>
+          <div class="text-2xl font-black text-blue-700">{stats.throughput.toFixed(2)}</div>
         </div>
-        <div class="text-xl font-bold text-primary">{formatTime(stats.duration)}</div>
       </div>
 
-      <div class="bg-sumi rounded-lg p-3">
-        <div class="flex items-center gap-2 text-muted mb-1">
-          <Users class="w-4 h-4" />
-          <span class="text-xs">Peak Waiting</span>
+      <!-- Turnaround Card -->
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <div class="p-2 bg-indigo-50 rounded-lg">
+              <Users class="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Turnaround</div>
+              <div class="text-[10px] text-slate-400">平均周轉時間 (抵達到離開)</div>
+            </div>
+          </div>
+          <div class="text-2xl font-black text-indigo-700">{formatTime(stats.averageTurnaroundTime)}</div>
         </div>
-        <div class="text-xl font-bold text-ocean">{stats.maxWaitingCustomers}</div>
       </div>
 
-      <div class="bg-sumi rounded-lg p-3">
-        <div class="flex items-center gap-2 text-muted mb-1">
-          <TrendingUp class="w-4 h-4" />
-          <span class="text-xs">Avg Wait</span>
+      <!-- Wait Time Card -->
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <div class="p-2 bg-emerald-50 rounded-lg">
+              <TrendingUp class="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Wait Time</div>
+              <div class="text-[10px] text-slate-400">平均等待時間 (在隊列中時間)</div>
+            </div>
+          </div>
+          <div class="text-2xl font-black text-emerald-700">{formatTime(stats.averageWaitTime)}</div>
         </div>
-        <div class="text-xl font-bold text-matcha">{formatTime(stats.averageWaitTime)}</div>
       </div>
 
-      <div class="bg-sumi rounded-lg p-3">
-        <div class="flex items-center gap-2 text-muted mb-1">
-          <AlertTriangle class="w-4 h-4" />
-          <span class="text-xs">Conflicts</span>
+      <!-- Contention Card -->
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <div class="p-2 bg-rose-50 rounded-lg">
+              <AlertTriangle class="w-5 h-5 text-rose-600" />
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Resource Contention</div>
+              <div class="text-[10px] text-slate-400">資源競爭次數 (發生等待次數)</div>
+            </div>
+          </div>
+          <div class="text-2xl font-black text-rose-700">{stats.totalConflicts}</div>
         </div>
-        <div class="text-xl font-bold text-salmon">{stats.totalConflicts}</div>
       </div>
     </div>
 
-    <!-- Seat Utilization -->
-    <div class="mb-6">
-      <h3 class="text-sm font-medium text-muted mb-3">Seat Utilization</h3>
-      <div class="space-y-2">
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-muted">Single Seats</span>
-            <span class="text-primary">{seatUtilByType.single}%</span>
-          </div>
-          <div class="h-2 bg-sumi rounded-full overflow-hidden">
-            <div class="h-full bg-salmon transition-all" style="width: {seatUtilByType.single}%"></div>
-          </div>
-        </div>
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-muted">4-Person Tables</span>
-            <span class="text-primary">{seatUtilByType.fourP}%</span>
-          </div>
-          <div class="h-2 bg-sumi rounded-full overflow-hidden">
-            <div class="h-full bg-ocean transition-all" style="width: {seatUtilByType.fourP}%"></div>
-          </div>
-        </div>
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-muted">6-Person Tables</span>
-            <span class="text-primary">{seatUtilByType.sixP}%</span>
-          </div>
-          <div class="h-2 bg-sumi rounded-full overflow-hidden">
-            <div class="h-full bg-matcha transition-all" style="width: {seatUtilByType.sixP}%"></div>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Selection Details -->
     {#if selectedFamilyDetails}

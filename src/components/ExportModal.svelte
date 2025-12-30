@@ -5,7 +5,7 @@
   import Button from './ui/Button.svelte';
   import Badge from './ui/Badge.svelte';
   import { uiStore, closeExportModal } from '../stores/ui';
-  import { simulationStore, simulationStats, allEvents } from '../stores/simulation';
+  import { simulationStore, simulationStats, allEvents, actions as simActions } from '../stores/simulation';
   import { seatConfigStore, customerConfigStore } from '../stores/config';
   import { formatTime } from '../stores/playback';
 
@@ -28,63 +28,75 @@
     };
   }
 
-  function exportJSON() {
-    const data = generateExportData();
-    const json = JSON.stringify(data, null, 2);
-    downloadFile(json, 'sushi-sync-export.json', 'application/json');
+  async function exportJSON() {
+    simActions.setLoading(true);
+    setTimeout(() => {
+      const data = generateExportData();
+      const json = JSON.stringify(data, null, 2);
+      downloadFile(json, 'sushi-sync-export.json', 'application/json');
+      simActions.setLoading(false);
+    }, 500);
   }
 
-  function exportTXT() {
-    let output = "[Thread ID] [Time] [Event Type] ID: {id} | Requirements: {Resource Requirements} | Result | Remaining Resources: S={Single}, 4P={4P Sofa}, 6P={6P Sofa}, B={Baby Chair}, W={Wheelchair}\n\n";
-    
-    // Initial resources
-    let s = 10, p4 = 4, p6 = 2, b = 4, w = 2;
-
-    $allEvents.forEach(event => {
-      const customer = $customerConfigStore.find(c => c.familyId === event.familyId);
-      if (!customer) return;
-
-      const threadId = Math.floor(Math.random() * 900000) + 100000;
-      const type = event.type;
-      const id = event.familyId;
+  async function exportTXT() {
+    simActions.setLoading(true);
+    setTimeout(() => {
+      let output = "[Thread ID] [Time] [Event Type] ID: {id} | Requirements: {Resource Requirements} | Result | Remaining Resources: S={Single}, 4P={4P Sofa}, 6P={6P Sofa}, B={Baby Chair}, W={Wheelchair}\n\n";
       
-      let actionResult = "";
-      let requirements = `${customer.partySize} seats`;
-      if (customer.babyChairCount > 0) requirements += `, ${customer.babyChairCount} baby_chair`;
-      if (customer.wheelchairCount > 0) requirements += `, ${customer.wheelchairCount} wheelchair`;
+      // Initial resources
+      let s = 10, p4 = 4, p6 = 2, b = 4, w = 2;
 
-      if (type === 'ARRIVAL') {
-        actionResult = "arrived";
-      } else if (type === 'SEATED') {
-        actionResult = `seated, id:[${event.seatId || '?'}]`;
-        if (event.seatId?.startsWith('S')) s--;
-        else if (event.seatId?.startsWith('4P')) p4--;
-        else if (event.seatId?.startsWith('6P')) p6--;
-        b -= customer.babyChairCount;
-        w -= customer.wheelchairCount;
-      } else if (type === 'LEFT') {
-        actionResult = `release, id:[${event.seatId || '?'}]`;
-        if (event.seatId?.startsWith('S')) s++;
-        else if (event.seatId?.startsWith('4P')) p4++;
-        else if (event.seatId?.startsWith('6P')) p6++;
-        b += customer.babyChairCount;
-        w += customer.wheelchairCount;
-      }
+      $allEvents.forEach(event => {
+        const customer = $customerConfigStore.find(c => c.familyId === event.familyId);
+        if (!customer) return;
 
-      output += `[${threadId}] [${event.timestamp}] [${customer.type}] ID: ${id} | Requirements: ${requirements} | ${actionResult} | Remaining: S=${s}, 4P=${p4}, 6P=${p6}, B=${b}, W=${w}\n`;
-    });
+        const threadId = Math.floor(Math.random() * 900000) + 100000;
+        const type = event.type;
+        const id = event.familyId;
+        
+        let actionResult = "";
+        let requirements = `${customer.partySize} seats`;
+        if (customer.babyChairCount > 0) requirements += `, ${customer.babyChairCount} baby_chair`;
+        if (customer.wheelchairCount > 0) requirements += `, ${customer.wheelchairCount} wheelchair`;
 
-    downloadFile(output, 'sushi-sync-report.txt', 'text/plain');
+        if (type === 'ARRIVAL') {
+          actionResult = "arrived";
+        } else if (type === 'SEATED') {
+          actionResult = `seated, id:[${event.seatId || '?'}]`;
+          if (event.seatId?.startsWith('S')) s--;
+          else if (event.seatId?.startsWith('4P')) p4--;
+          else if (event.seatId?.startsWith('6P')) p6--;
+          b -= customer.babyChairCount;
+          w -= customer.wheelchairCount;
+        } else if (type === 'LEFT') {
+          actionResult = `release, id:[${event.seatId || '?'}]`;
+          if (event.seatId?.startsWith('S')) s++;
+          else if (event.seatId?.startsWith('4P')) p4++;
+          else if (event.seatId?.startsWith('6P')) p6++;
+          b += customer.babyChairCount;
+          w += customer.wheelchairCount;
+        }
+
+        output += `[${threadId}] [${event.timestamp}] [${customer.type}] ID: ${id} | Requirements: ${requirements} | ${actionResult} | Remaining: S=${s}, 4P=${p4}, 6P=${p6}, B=${b}, W=${w}\n`;
+      });
+
+      downloadFile(output, 'sushi-sync-report.txt', 'text/plain');
+      simActions.setLoading(false);
+    }, 800);
   }
 
-  function exportCSV() {
-    let csv = 'id,arrival_time,type,party_size,baby_chair,wheel_chair,est_dining_time\n';
+  async function exportCSV() {
+    simActions.setLoading(true);
+    setTimeout(() => {
+      let csv = 'id,arrival_time,type,party_size,baby_chair,wheel_chair,est_dining_time\n';
 
-    $customerConfigStore.forEach(c => {
-      csv += `${c.id},${c.arrivalTime},${c.type},${c.partySize},${c.babyChairCount},${c.wheelchairCount},${c.estDiningTime}\n`;
-    });
+      $customerConfigStore.forEach(c => {
+        csv += `${c.id},${c.arrivalTime},${c.type},${c.partySize},${c.babyChairCount},${c.wheelchairCount},${c.estDiningTime}\n`;
+      });
 
-    downloadFile(csv, 'customers.csv', 'text/csv');
+      downloadFile(csv, 'customers.csv', 'text/csv');
+      simActions.setLoading(false);
+    }, 500);
   }
 
   function downloadFile(content: string, filename: string, mimeType: string) {

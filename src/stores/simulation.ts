@@ -52,17 +52,18 @@ export const allEvents = derived(simulationStore, ($store) => {
   return events.sort((a, b) => a.timestamp - b.timestamp);
 });
 
-// 計算統計數據 (用於 Analysis Panel)
+// 計算統計數據 (用於 Analysis Panel) - OS 導向分析
 export const simulationStats = derived(simulationStore, ($store) => {
   const frames = $store.frames;
-  if (frames.length === 0) {
+  const customers = get(customerConfigStore);
+  
+  if (frames.length === 0 || customers.length === 0) {
     return {
       totalCustomers: 0,
       averageWaitTime: 0,
-      averageDiningTime: 0,
-      tableUtilization: 0,
-      totalFrames: 0,
-      totalEvents: 0,
+      averageTurnaroundTime: 0,
+      throughput: 0,
+      cpuUtilization: 0, // 對應座位利用率
       maxWaitingCustomers: 0,
       totalConflicts: 0,
       duration: 0,
@@ -71,30 +72,57 @@ export const simulationStats = derived(simulationStore, ($store) => {
   }
   
   const lastFrame = frames[frames.length - 1];
-  const duration = lastFrame?.timestamp || 0;
+  const duration = lastFrame?.timestamp || 1;
   
-  let totalSeatFrames = 0;
-  let occupiedSeatFrames = 0;
-  
-  // 計算座位利用率
-  frames.forEach(frame => {
-    if (frame.seats) {
-      totalSeatFrames += frame.seats.length;
-      occupiedSeatFrames += frame.seats.filter(seat => seat.occupiedBy !== null).length;
+  // 1. 計算等待時間與周轉時間
+  let totalWaitTime = 0;
+  let totalTurnaroundTime = 0;
+  let completedCustomers = 0;
+  let maxWaiting = 0;
+  let totalConflicts = 0;
+
+  customers.forEach(c => {
+    const events = frames.flatMap(f => f.events).filter(e => e.familyId === c.familyId);
+    const arrival = events.find(e => e.type === 'ARRIVAL')?.timestamp ?? c.arrivalTime;
+    const seated = events.find(e => e.type === 'SEATED')?.timestamp;
+    const left = events.find(e => e.type === 'LEFT')?.timestamp;
+
+    if (seated !== undefined) {
+      totalWaitTime += (seated - arrival);
+      if (left !== undefined) {
+        totalTurnaroundTime += (left - arrival);
+        completedCustomers++;
+      }
     }
+    
+    // 統計衝突 (WAITING 事件次數)
+    totalConflicts += events.filter(e => e.type === 'WAITING').length;
   });
-  
-  const seatUtilization = totalSeatFrames > 0 ? (occupiedSeatFrames / totalSeatFrames) * 100 : 0;
-  
+
+  // 2. 計算峰值等待人數
+  frames.forEach(f => {
+    if (f.waitingQueue.length > maxWaiting) maxWaiting = f.waitingQueue.length;
+  });
+
+  // 3. 計算資源利用率 (座位)
+  let totalSeatSlots = 0;
+  let occupiedSeatSlots = 0;
+  frames.forEach(frame => {
+    totalSeatSlots += frame.seats.length;
+    occupiedSeatSlots += frame.seats.filter(s => s.occupiedBy !== null).length;
+  });
+
+  const seatUtilization = (occupiedSeatSlots / Math.max(1, totalSeatSlots)) * 100;
+  const throughput = (completedCustomers / duration);
+
   return {
-    totalCustomers: get(customerConfigStore).length,
-    averageWaitTime: 0, // 可根據需要實作更複雜的等待時間計算
-    averageDiningTime: 0,
-    tableUtilization: seatUtilization,
-    totalFrames: frames.length,
-    totalEvents: 0,
-    maxWaitingCustomers: 0,
-    totalConflicts: 0,
+    totalCustomers: customers.length,
+    averageWaitTime: totalWaitTime / Math.max(1, completedCustomers),
+    averageTurnaroundTime: totalTurnaroundTime / Math.max(1, completedCustomers),
+    throughput,
+    cpuUtilization: seatUtilization,
+    maxWaitingCustomers: maxWaiting,
+    totalConflicts,
     duration,
     seatUtilization
   };
@@ -135,6 +163,10 @@ export function resetSimulation() {
 
 // ===== Actions (核心邏輯) =====
 export const actions = {
+  setLoading: (loading: boolean) => {
+    simulationStore.update(s => ({ ...s, loading }));
+  },
+
   // 啟動模擬：這是唯一入口
   startSimulation: async (csvContent?: string) => {
     simulationStore.update(s => ({ ...s, loading: true, error: null }));
