@@ -55,7 +55,7 @@
     const customer = getCustomerInfo(seat.occupiedBy);
     if (!customer) return index === 0;
     
-    // partySize 包含所有人，但嬰兒不佔用獨立座位小方塊
+    // partySize includes everyone, but babies do not occupy independent seat slots
     const adultCount = Math.max(1, customer.partySize - customer.babyChairCount);
     return index < adultCount;
   }
@@ -224,7 +224,7 @@
 
     {#if waitingQueue.length > 0}
       <div class="mt-8 pt-6 border-t border-slate-200">
-        <div class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">Waiting Area</div>
+        <div class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">Waiting Area (Ready Queue)</div>
         <div class="flex flex-wrap gap-2">
           {#each waitingQueue as customer}
             {@const color = familyColors.get(customer.familyId) || '#cbd5e1'}

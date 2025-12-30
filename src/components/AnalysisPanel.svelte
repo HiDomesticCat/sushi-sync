@@ -71,7 +71,7 @@
             </div>
             <div>
               <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Throughput</div>
-              <div class="text-[10px] text-slate-400">系統吞吐量 (每秒處理家庭數)</div>
+              <div class="text-[10px] text-slate-400">Families processed per second</div>
             </div>
           </div>
           <div class="text-2xl font-black text-blue-700">{stats.throughput.toFixed(2)}</div>
@@ -87,7 +87,7 @@
             </div>
             <div>
               <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Turnaround</div>
-              <div class="text-[10px] text-slate-400">平均周轉時間 (抵達到離開)</div>
+              <div class="text-[10px] text-slate-400">Time from arrival to departure</div>
             </div>
           </div>
           <div class="text-2xl font-black text-indigo-700">{formatTime(stats.averageTurnaroundTime)}</div>
@@ -103,7 +103,7 @@
             </div>
             <div>
               <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Wait Time</div>
-              <div class="text-[10px] text-slate-400">平均等待時間 (在隊列中時間)</div>
+              <div class="text-[10px] text-slate-400">Time spent in ready queue</div>
             </div>
           </div>
           <div class="text-2xl font-black text-emerald-700">{formatTime(stats.averageWaitTime)}</div>
@@ -119,7 +119,7 @@
             </div>
             <div>
               <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Resource Contention</div>
-              <div class="text-[10px] text-slate-400">資源競爭次數 (發生等待次數)</div>
+              <div class="text-[10px] text-slate-400">Total resource conflict hits</div>
             </div>
           </div>
           <div class="text-2xl font-black text-rose-700">{stats.totalConflicts}</div>

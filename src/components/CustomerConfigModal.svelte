@@ -140,7 +140,7 @@
 
     <!-- Add Customer Form -->
     <Card variant="bordered" padding="md">
-      <h3 class="text-lg font-semibold text-hinoki mb-4">Add New Customer</h3>
+      <h3 class="text-lg font-semibold text-hinoki mb-4">Add New Customer (Process)</h3>
 
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div>

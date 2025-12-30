@@ -103,7 +103,7 @@
     <Card variant="elevated" padding="md" class="bg-pink-50/30 border-pink-200">
       <div class="flex items-center gap-3 mb-4">
         <span class="text-2xl">🍼</span>
-        <h3 class="text-lg font-semibold text-pink-700">Global Resource Limits</h3>
+        <h3 class="text-lg font-semibold text-pink-700">Global Resource Limits (OS Semaphores)</h3>
       </div>
 
       <div class="grid grid-cols-2 gap-6">

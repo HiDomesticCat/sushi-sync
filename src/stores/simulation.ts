@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import type { SimulationFrame, CustomerConfig, SeatConfig } from '../types';
 import { customerConfigStore, seatConfigStore, exportCustomersToCSV, resourceLimitsStore } from './config';
 
-// ===== 狀態介面定義 =====
+// ===== State Interface Definition =====
 interface SimulationState {
   frames: SimulationFrame[];
   currentFrameIndex: number;
@@ -20,10 +20,10 @@ const initialState: SimulationState = {
   error: null
 };
 
-// ===== 主要 Store =====
+// ===== Main Store =====
 export const simulationStore = writable<SimulationState>(initialState);
 
-// ===== 衍生狀態 (Derived Stores) =====
+// ===== Derived Stores =====
 export const isSimulationComplete = derived(simulationStore, $s => $s.frames.length > 0);
 export const isSimulationRunning = derived(simulationStore, $s => $s.isPlaying);
 
@@ -32,7 +32,7 @@ export const currentFrame = derived(simulationStore, ($store) => {
   return $store.frames[$store.currentFrameIndex];
 });
 
-// 取得所有事件 (用於 Log Terminal)
+// Get all events (for Log Terminal)
 export const allEvents = derived(simulationStore, ($store) => {
   if ($store.frames.length === 0) return [];
   const events: any[] = [];
@@ -40,7 +40,7 @@ export const allEvents = derived(simulationStore, ($store) => {
   
   $store.frames.forEach(frame => {
     frame.events.forEach(event => {
-      // 產生唯一 Key 避免重複顯示
+      // Generate unique key to avoid duplicate display
       const key = `${event.timestamp}-${event.type}-${event.familyId}`;
       if (!seen.has(key)) {
         events.push(event);
@@ -52,7 +52,7 @@ export const allEvents = derived(simulationStore, ($store) => {
   return events.sort((a, b) => a.timestamp - b.timestamp);
 });
 
-// 計算統計數據 (用於 Analysis Panel) - OS 導向分析
+// Calculate statistics (for Analysis Panel) - OS Oriented Analysis
 export const simulationStats = derived(simulationStore, ($store) => {
   const frames = $store.frames;
   const customers = get(customerConfigStore);
@@ -63,7 +63,7 @@ export const simulationStats = derived(simulationStore, ($store) => {
       averageWaitTime: 0,
       averageTurnaroundTime: 0,
       throughput: 0,
-      cpuUtilization: 0, // 對應座位利用率
+      cpuUtilization: 0, // Maps to seat utilization
       maxWaitingCustomers: 0,
       totalConflicts: 0,
       duration: 0,
@@ -74,7 +74,7 @@ export const simulationStats = derived(simulationStore, ($store) => {
   const lastFrame = frames[frames.length - 1];
   const duration = lastFrame?.timestamp || 1;
   
-  // 1. 計算等待時間與周轉時間
+  // 1. Calculate wait time and turnaround time
   let totalWaitTime = 0;
   let totalTurnaroundTime = 0;
   let completedCustomers = 0;
@@ -95,16 +95,16 @@ export const simulationStats = derived(simulationStore, ($store) => {
       }
     }
     
-    // 統計衝突 (WAITING 事件次數)
+    // Count conflicts (WAITING event count)
     totalConflicts += events.filter(e => e.type === 'WAITING').length;
   });
 
-  // 2. 計算峰值等待人數
+  // 2. Calculate peak waiting count
   frames.forEach(f => {
     if (f.waitingQueue.length > maxWaiting) maxWaiting = f.waitingQueue.length;
   });
 
-  // 3. 計算資源利用率 (座位)
+  // 3. Calculate resource utilization (seats)
   let totalSeatSlots = 0;
   let occupiedSeatSlots = 0;
   frames.forEach(frame => {
@@ -128,9 +128,9 @@ export const simulationStats = derived(simulationStore, ($store) => {
   };
 });
 
-// ===== 輔助函式 =====
+// ===== Helper Functions =====
 
-// 根據時間戳取得 Frame
+// Get frame at specific timestamp
 export function getFrameAtTime(timestamp: number) {
   const store = get(simulationStore);
   if (store.frames.length === 0) return null;
@@ -161,35 +161,34 @@ export function resetSimulation() {
   }));
 }
 
-// ===== Actions (核心邏輯) =====
+// ===== Actions (Core Logic) =====
 export const actions = {
   setLoading: (loading: boolean) => {
     simulationStore.update(s => ({ ...s, loading }));
   },
 
-  // 啟動模擬：這是唯一入口
+  // Start simulation: Main entry point
   startSimulation: async (csvContent?: string) => {
     simulationStore.update(s => ({ ...s, loading: true, error: null }));
     
     try {
-      // 1. 準備資料
-      // 如果沒有傳入 CSV，則從目前的 Store 產生 (支援使用者在 UI 修改過顧客資料的情況)
+      // 1. Prepare data
+      // If no CSV provided, generate from current store
       const finalCsvContent = csvContent || exportCustomersToCSV();
       const seatConfig = get(seatConfigStore);
       const seatConfigJson = JSON.stringify(seatConfig);
       
       console.log("Starting simulation...");
 
-      // 2. 載入並解析顧客資料
-      // 🔥 關鍵修正：直接使用泛型 <CustomerConfig[]>，Tauri 會自動對應 camelCase 欄位
-      // 絕對不要在這裡手動 map (例如 c.type_ 或 c.party_size)，那是導致 NaN 的原因
+      // 2. Load and parse customer data
+      // Use generic <CustomerConfig[]> for automatic camelCase mapping
       const customers = await invoke<CustomerConfig[]>('load_customers', { csvContent: finalCsvContent });
       
       console.log("Customers loaded from backend:", customers.length);
-      // 將正確解析後的資料存回 Store (這會更新 UI 顯示)
+      // Save parsed data back to store
       customerConfigStore.set(customers);
 
-      // 3. 執行模擬
+      // 3. Execute simulation
       const limits = get(resourceLimitsStore);
       const frames = await invoke<SimulationFrame[]>('start_simulation', { 
         csvContent: finalCsvContent,
@@ -200,7 +199,7 @@ export const actions = {
 
       console.log("Simulation finished:", frames.length, "frames generated.");
 
-      // 4. 更新模擬狀態
+      // 4. Update simulation state
       simulationStore.update(s => ({
         ...s,
         frames: frames,
@@ -235,11 +234,8 @@ export const actions = {
   }
 };
 
-// ===== 相容性函式 (Deprecated) =====
-// 為了防止舊的 UI 程式碼報錯，我們保留這個函式，但讓它轉發給新的 actions
+// ===== Compatibility Functions (Deprecated) =====
 export async function runSimulation(seatConfig: any[], customerConfig: any[]) {
   console.log("Legacy runSimulation called, redirecting to actions.startSimulation...");
-  // 無論傳入什麼參數，我們都重新從 Store 匯出 CSV 以確保一致性
-  // 或是直接呼叫 actions.startSimulation() 讓它自己去抓
   return await actions.startSimulation();
 }

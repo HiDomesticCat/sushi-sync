@@ -16,8 +16,8 @@ serde_json = "1"
 thiserror = "1"
 rand = "0.9.2"
 
-# 在 src-tauri/Cargo.toml 檔案最後面加入：
+# Add to the end of src-tauri/Cargo.toml:
 [profile.dev]
-incremental = false # 關閉增量編譯以節省磁碟空間
-debug = 0           # 關閉除錯符號 (這是最吃空間的部分)
-strip = "debuginfo" # 移除執行檔中的除錯資訊
+incremental = false # Disable incremental compilation to save disk space
+debug = 0           # Disable debug symbols (this is the most space-consuming part)
+strip = "debuginfo" # Remove debug info from the executable

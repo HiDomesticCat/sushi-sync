@@ -5,8 +5,8 @@ use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
 use std::time::Duration;
 
-// 根據題目範例設定預設資源
-const WAIT_TIMEOUT_MS: u64 = 3600000; // 增加到 1 小時，避免過早逾時
+// Default wait timeout (1 hour) to prevent premature timeout in simulation
+const WAIT_TIMEOUT_MS: u64 = 3600000; 
 
 struct SushiResources {
     baby_chairs_available: i32,
@@ -24,7 +24,7 @@ struct SeatState {
 #[derive(Debug, Clone)]
 struct SimEvent {
     time: u64,
-    sequence: usize, // 新增：確保排序穩定
+    sequence: usize, // Sequence number to ensure stable sorting for concurrent events
     family_id: u32,
     action: Action,
     log_message: String,
@@ -33,14 +33,14 @@ struct SimEvent {
 #[derive(Debug, Clone)]
 enum Action {
     Arrive,
-    Wait,   // ✅ 新增：符合題目要求的等待事件
+    Wait,   
     Sit(String),
     Leave(String),
     Error,
 }
 
-// 輔助函式：產生符合 output_rule.txt 的詳細 Log
-// 格式: [Thread ID] [時間] [事件] ID:.. | 需求:.. | 結果 | 剩餘資源:..
+// Helper: Generate detailed log matching output_rule.txt
+// Format: [Thread ID] [Time] [Event] ID:.. | Requirements:.. | Result | Remaining: S=.., 4P=.., 6P=.., B=.., W=..
 fn generate_log(
     time: u64, 
     customer: &CustomerConfig, 
@@ -48,17 +48,17 @@ fn generate_log(
     result_str: &str, 
     res: &SushiResources
 ) -> String {
-    // 計算剩餘座位
+    // Calculate remaining seats
     let s_cnt = res.seats.iter().filter(|s| s.config.type_ == "SINGLE" && s.occupied_by.is_none()).count();
     let p4_cnt = res.seats.iter().filter(|s| s.config.type_ == "4P" && s.occupied_by.is_none()).count();
     let p6_cnt = res.seats.iter().filter(|s| s.config.type_ == "6P" && s.occupied_by.is_none()).count();
     
-    // 取得 Thread ID (簡化為數字顯示)
+    // Get Thread ID (simplified numeric display)
     let thread_id = format!("{:?}", thread::current().id())
         .replace("ThreadId(", "")
         .replace(")", "");
 
-    // 產生需求字串
+    // Generate requirements string
     let mut req_parts = vec![format!("{} seats", customer.party_size)];
     if customer.baby_chair_count > 0 { req_parts.push(format!("{} baby_chair", customer.baby_chair_count)); }
     if customer.wheelchair_count > 0 { req_parts.push(format!("{} wheelchair", customer.wheelchair_count)); }
@@ -68,7 +68,7 @@ fn generate_log(
         "[{}] [{}] [{}] ID: {} | Requirements: {} | {} | Remaining: S={}, 4P={}, 6P={}, B={}, W={}",
         thread_id,
         time,
-        event_type, // 修正：這裡應該顯示事件類型 (ARRIVE, SIT, LEAVE, WAIT)
+        event_type, 
         customer.id,
         req_str,
         result_str,
@@ -117,7 +117,7 @@ pub fn start_simulation(
         let handle = thread::spawn(move || {
             let (lock, cvar) = &*monitor_clone;
             
-            // 1. Arrive (抵達)
+            // 1. Arrive
             {
                 let mut res = lock.lock().unwrap();
                 let log = generate_log(customer.arrival_time, &customer, "ARRIVAL", "arrived", &res);
@@ -130,17 +130,17 @@ pub fn start_simulation(
                 });
             }
 
-            // 2. Wait & Allocate (等待與分配)
+            // 2. Wait & Allocate
             let seated_seat_ids: Vec<String>;
             let mut res = lock.lock().unwrap();
-            let mut has_logged_wait = false; // 避免重複記錄 wait
+            let mut has_logged_wait = false; // Avoid duplicate wait logging
             
             loop {
-                // 嘗試分配資源
+                // Try to allocate resources
                 if let Some(seat_ids) = try_allocate(&res, &customer) {
-                    // 分配成功：扣除資源
+                    // Allocation success: deduct resources
                     res.baby_chairs_available -= customer.baby_chair_count as i32;
-                    res.wheelchairs_available -= customer.wheelchair_count as i32; // ✅ 扣除輪椅
+                    res.wheelchairs_available -= customer.wheelchair_count as i32; // Deduct wheelchairs
                     
                     for sid in &seat_ids {
                         if let Some(seat) = res.seats.iter_mut().find(|s| s.config.id == *sid) {
@@ -148,27 +148,27 @@ pub fn start_simulation(
                         }
                     }
                     seated_seat_ids = seat_ids;
-                    break; // 跳出等待迴圈
+                    break; // Exit wait loop
                 }
 
-                // 分配失敗：如果是第一次失敗，記錄 Waited 事件
+                // Allocation failed: log WAITING event if first time
                 if !has_logged_wait {
                     let log = generate_log(customer.arrival_time, &customer, "WAITING", "waited", &res);
                     let seq = res.events.len();
                     res.events.push(SimEvent {
                         time: customer.arrival_time, 
                         sequence: seq,
-                        family_id: customer.family_id, // 注意：時間暫定為抵達時間
+                        family_id: customer.family_id, // Note: time set to arrival time
                         action: Action::Wait, log_message: log,
                     });
                     has_logged_wait = true;
                 }
 
-                // 等待通知
+                // Wait for notification
                 let result = cvar.wait_timeout(res, Duration::from_millis(WAIT_TIMEOUT_MS)).unwrap();
                 res = result.0;
                 if result.1.timed_out() {
-                    // 逾時處理
+                    // Timeout handling
                     let log = format!("[TIMEOUT] Customer {} gave up.", customer.id);
                     let seq = res.events.len();
                     res.events.push(SimEvent {
@@ -181,7 +181,7 @@ pub fn start_simulation(
                 }
             }
 
-            // 3. Sit (入座)
+            // 3. Sit
             let last_time = res.events.last().map(|e| e.time).unwrap_or(0);
             let sit_time = std::cmp::max(last_time, customer.arrival_time);
             let seat_str = seated_seat_ids.join(",");
@@ -197,18 +197,18 @@ pub fn start_simulation(
                 log_message: log,
             });
 
-            drop(res); // 釋放鎖，開始用餐
+            drop(res); // Release lock, start dining
             
-            // 增加微小延遲，模擬用餐過程，防止資源被瞬間釋放導致競爭
+            // Add small delay to simulate dining process and prevent instant resource release
             thread::sleep(Duration::from_millis(customer.est_dining_time * 10));
 
-            // 4. Leave (離開)
+            // 4. Leave
             let leave_time = sit_time + customer.est_dining_time;
             let mut res = lock.lock().unwrap();
             
-            // 歸還資源
+            // Return resources
             res.baby_chairs_available += customer.baby_chair_count as i32;
-            res.wheelchairs_available += customer.wheelchair_count as i32; // ✅ 歸還輪椅
+            res.wheelchairs_available += customer.wheelchair_count as i32; // Return wheelchairs
             
             for sid in &seated_seat_ids {
                 if let Some(seat) = res.seats.iter_mut().find(|s| s.config.id == *sid) {
@@ -228,7 +228,7 @@ pub fn start_simulation(
                 log_message: log,
             });
             
-            cvar.notify_all(); // 通知等待中的顧客
+            cvar.notify_all(); // Notify waiting customers
         });
         handles.push(handle);
     }
@@ -239,7 +239,7 @@ pub fn start_simulation(
 }
 
 fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<String>> {
-    // 1. 檢查全域資源 (嬰兒椅 & 輪椅)
+    // 1. Check global resources (Baby Chairs & Wheelchairs)
     if customer.baby_chair_count > 0 && res.baby_chairs_available < customer.baby_chair_count as i32 {
         return None;
     }
@@ -249,10 +249,10 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
 
     let mut chosen_seats = Vec::new();
 
-    // 2. 尋找座位 (嚴格執行「一桌一家人，不併桌」原則)
+    // 2. Find seats (Strictly enforce "One Table per Family, No Sharing" principle)
     if customer.wheelchair_count > 0 {
-        // 輪椅客：必須坐無障礙沙發 (4P/6P)，不能坐吧台 (SINGLE)
-        // 佔用整張桌子，不與他人併桌
+        // Wheelchair users: Must sit in accessible sofa (4P/6P), cannot sit at bar (SINGLE)
+        // Occupy the entire table, no sharing with others
         let seat = res.seats.iter()
             .find(|s| {
                 s.occupied_by.is_none() && 
@@ -264,7 +264,7 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             chosen_seats.push(s.config.id.clone());
         }
     } else if customer.party_size > 1 {
-        // 多人家庭：首選沙發 (4P/6P)
+        // Multi-person families: Prefer sofa (4P/6P)
         let sofa = res.seats.iter()
             .find(|s| {
                 s.occupied_by.is_none() && 
@@ -275,8 +275,8 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
         if let Some(s) = sofa {
             chosen_seats.push(s.config.id.clone());
         } else if customer.party_size == 4 {
-            // 降級邏輯：4 人家庭可以接受吧台區的 4 個連續單人位
-            // 假設吧台位 ID 是按順序排列的 (例如 S01, S02...)
+            // Downgrade logic: 4-person families can accept 4 consecutive single seats at the bar
+            // Assume bar seat IDs are ordered (e.g., S01, S02...)
             let single_seats: Vec<&SeatState> = res.seats.iter()
                 .filter(|s| s.config.type_ == "SINGLE")
                 .collect();
@@ -290,14 +290,14 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             }
         }
     } else {
-        // 單人：優先找吧台 (SINGLE)
+        // Individuals: Prefer bar (SINGLE)
         let seat = res.seats.iter()
             .find(|s| s.occupied_by.is_none() && s.config.type_ == "SINGLE");
             
         if let Some(s) = seat {
             chosen_seats.push(s.config.id.clone());
         } else {
-             // Fallback: 找任何空的多人桌 (4P/6P)
+             // Fallback: Find any empty sofa (4P/6P)
              let any_sofa = res.seats.iter()
                 .find(|s| s.occupied_by.is_none() && s.config.type_ != "SINGLE");
              if let Some(s) = any_sofa {
@@ -313,11 +313,11 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
     }
 }
 
-// 產生前端需要的 Frames
+// Generate Frames needed for frontend
 fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config: &Vec<SeatConfig>, customers: &Vec<CustomerConfig>) -> Result<Vec<SimulationFrame>> {
     let result_lock = monitor.0.lock().unwrap();
     let mut sorted_events = result_lock.events.clone();
-    // 使用穩定排序，並考慮 sequence 確保順序正確
+    // Use stable sort considering sequence to ensure correct order
     sorted_events.sort_by(|a, b| a.time.cmp(&b.time).then(a.sequence.cmp(&b.sequence)));
 
     let max_time = sorted_events.last().map(|e| e.time).unwrap_or(0);
@@ -330,8 +330,8 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
         is_wheelchair_accessible: s.is_wheelchair_accessible,
     }).collect();
     
-    // 用來標記視覺效果 (不影響邏輯)
-    // 儲存家庭的特殊需求與嬰兒椅總數
+    // Used for visual markers (does not affect logic)
+    // Store family special needs and total baby chairs
     let mut family_info = std::collections::HashMap::new();
 
     for customer in customers {
@@ -345,7 +345,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
     let mut event_idx = 0;
     let mut waiting_family_ids = std::collections::HashSet::new();
     
-    // 產生每一秒的 Frame
+    // Generate Frame for every second
     for t in 0..=max_time + 5 {
         while event_idx < sorted_events.len() && sorted_events[event_idx].time <= t {
             let evt = &sorted_events[event_idx];
@@ -360,7 +360,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                     let num_seats = seat_ids.len();
                     
                     if let Some(&(baby_cnt, wheel_cnt, _party_size)) = family_info.get(&evt.family_id) {
-                        // 計算每個座位分配到的嬰兒椅 (平分)
+                        // Calculate baby chairs assigned to each seat (distributed)
                         let base_baby = baby_cnt / num_seats as u32;
                         let mut extra_baby = baby_cnt % num_seats as u32;
 
@@ -368,7 +368,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                             if let Some(s) = current_seats.iter_mut().find(|seat| seat.id == *id) {
                                 s.occupied_by = Some(evt.family_id);
                                 
-                                // 分配嬰兒椅
+                                // Assign baby chairs
                                 let mut my_baby = base_baby;
                                 if extra_baby > 0 {
                                     my_baby += 1;
@@ -376,7 +376,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
                                 }
                                 s.baby_chair_count = my_baby;
 
-                                // 設定佔用者類型
+                                // Set occupant type
                                 if wheel_cnt > 0 && i == 0 {
                                     s.occupant_type = Some("WHEELCHAIR".to_string());
                                 } else {
@@ -402,7 +402,7 @@ fn generate_frames(monitor: Arc<(Mutex<SushiResources>, Condvar)>, seats_config:
             event_idx += 1;
         }
         
-        // 篩選出發生在此刻的事件，傳給前端 LogTerminal 顯示
+        // Filter events occurring at this moment for frontend LogTerminal
         let current_events: Vec<SimulationEvent> = sorted_events.iter()
             .filter(|e| e.time == t)
             .map(|e| SimulationEvent {

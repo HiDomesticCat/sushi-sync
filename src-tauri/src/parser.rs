@@ -11,13 +11,13 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
         }
 
         let parts: Vec<&str> = line.split(',').collect();
-        if parts.len() < 2 { continue; } // 寬容檢查，只要有基本欄位就好
+        if parts.len() < 2 { continue; } // Lenient check, as long as basic fields exist
 
         let id = parts[0].trim().parse::<u32>().unwrap_or(0);
         if id == 0 { continue; }
 
         let arrival_time = parts.get(1).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
-        // 跳過 parts[2] (原本的 type 欄位)
+        // Skip parts[2] (original type field)
         let party_size = parts.get(3).and_then(|s| s.trim().parse().ok()).unwrap_or(1);
         
         let baby_str = parts.get(4).unwrap_or(&"0").trim().to_lowercase();
@@ -28,7 +28,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
 
         let est_dining_time = parts.get(6).and_then(|s| s.trim().parse().ok()).unwrap_or(60);
 
-        // 🔥 自動判斷類型：確保 type 永遠有值
+        // 🔥 Auto-determine type: ensure type always has a value
         let type_ = if wheelchair_count > 0 {
             "WHEELCHAIR".to_string()
         } else if baby_chair_count > 0 {
@@ -45,7 +45,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
             id,
             family_id: id,
             arrival_time,
-            type_, // 這裡使用自動判斷的結果
+            type_, // Use the auto-determined result here
             party_size,
             baby_chair_count,
             wheelchair_count,

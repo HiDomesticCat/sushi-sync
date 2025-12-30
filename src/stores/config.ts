@@ -32,7 +32,7 @@ const defaultSeats: SeatConfig[] = [
 export const seatConfigStore = writable<SeatConfig[]>(defaultSeats);
 export const customerConfigStore = writable<CustomerConfig[]>([]);
 
-// 全域資源限制
+// Global resource limits
 export const resourceLimitsStore = writable({
   babyChairs: 4,
   wheelchairs: 2
@@ -89,19 +89,18 @@ export function clearCustomers() {
   customerConfigStore.set([]);
 }
 
-// ❌ 已廢棄：舊的 JS 解析邏輯，不建議使用，改用後端 load_customers
+// Deprecated: Old JS parsing logic, use backend load_customers instead
 export function loadCustomersFromCSV(csvContent: string): CustomerConfig[] {
-  // (保留但建議不使用)
   return []; 
 }
 
-// ✅ 修正 1: Import CSV
+// Import CSV
 export async function importCustomersFromCSV(csvContent: string) {
   try {
     simulationStore.update(s => ({ ...s, loading: true }));
     console.log("Config: Calling Rust load_customers...");
     
-    // 直接接收正確格式的資料
+    // Receive correctly formatted data directly
     const customers = await invoke<CustomerConfig[]>('load_customers', { csvContent });
     
     console.log("Config: Rust returned customers:", customers);
@@ -130,19 +129,17 @@ export function exportCustomersToCSV(): string {
   return csv;
 }
 
-// ✅ 修正 2: Generate Random Customers
+// Generate Random Customers
 export async function generateCustomersInRust(count: number, maxArrivalTime: number) {
   try {
     console.log("Generating random customers...");
     
-    // 直接接收正確格式
+    // Receive correctly formatted data directly
     const customers = await invoke<CustomerConfig[]>('generate_customers', { 
         count, 
-        maxArrivalTime: Number(maxArrivalTime) // 確保轉為數字
+        maxArrivalTime: Number(maxArrivalTime) // Ensure numeric conversion
     });
     
-    // ❌ 移除舊的 mapping (c.type_ -> NaN)
-    // ✅ 直接使用
     customerConfigStore.set(customers);
     
     console.log("Generated:", customers);

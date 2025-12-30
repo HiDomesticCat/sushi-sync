@@ -2,7 +2,7 @@
   import { simulationStore } from '../stores/simulation';
   import { playbackStore } from '../stores/playback';
   
-  // 安全獲取長度，避免 undefined 錯誤
+  // Safely get length to avoid undefined errors
   $: totalDuration = $simulationStore.frames ? $simulationStore.frames.length : 0;
   $: currentFrame = Math.floor($playbackStore.currentTime);
   
