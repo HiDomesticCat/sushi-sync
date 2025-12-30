@@ -6,34 +6,46 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
     
     for (i, line) in csv_content.lines().enumerate() {
         let line = line.trim();
-        // Skip header or empty lines
         if line.is_empty() || (i == 0 && line.to_lowercase().starts_with("id")) {
             continue;
         }
 
         let parts: Vec<&str> = line.split(',').collect();
-        if parts.len() < 7 { continue; }
+        if parts.len() < 2 { continue; } // 寬容檢查，只要有基本欄位就好
 
         let id = parts[0].trim().parse::<u32>().unwrap_or(0);
         if id == 0 { continue; }
 
-        let arrival_time = parts[1].trim().parse::<u64>().unwrap_or(0);
-        let type_str = parts[2].trim().to_uppercase();
-        let party_size = parts[3].trim().parse::<u32>().unwrap_or(1);
+        let arrival_time = parts.get(1).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+        // 跳過 parts[2] (原本的 type 欄位)
+        let party_size = parts.get(3).and_then(|s| s.trim().parse().ok()).unwrap_or(1);
         
-        let baby_str = parts[4].trim().to_lowercase();
+        let baby_str = parts.get(4).unwrap_or(&"0").trim().to_lowercase();
         let baby_chair_count = if baby_str == "true" { 1 } else { baby_str.parse().unwrap_or(0) };
 
-        let wheel_str = parts[5].trim().to_lowercase();
+        let wheel_str = parts.get(5).unwrap_or(&"0").trim().to_lowercase();
         let wheelchair_count = if wheel_str == "true" { 1 } else { wheel_str.parse().unwrap_or(0) };
 
-        let est_dining_time = parts[6].trim().parse::<u64>().unwrap_or(60);
+        let est_dining_time = parts.get(6).and_then(|s| s.trim().parse().ok()).unwrap_or(60);
+
+        // 🔥 自動判斷類型：確保 type 永遠有值
+        let type_ = if wheelchair_count > 0 {
+            "WHEELCHAIR".to_string()
+        } else if baby_chair_count > 0 {
+            "WITH_BABY".to_string()
+        } else if party_size > 4 {
+            "LARGE_GROUP".to_string()
+        } else if party_size > 1 {
+            "FAMILY".to_string()
+        } else {
+            "INDIVIDUAL".to_string()
+        };
 
         customers.push(CustomerConfig {
             id,
             family_id: id,
             arrival_time,
-            type_: type_str,
+            type_, // 這裡使用自動判斷的結果
             party_size,
             baby_chair_count,
             wheelchair_count,
