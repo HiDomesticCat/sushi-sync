@@ -136,11 +136,11 @@ pub fn start_simulation(
             let mut has_logged_wait = false; // Avoid duplicate wait logging
             
             loop {
-                // Try to allocate resources
+                // Try to allocate resources (Atomic check and allocation)
                 if let Some(seat_ids) = try_allocate(&res, &customer) {
                     // Allocation success: deduct resources
                     res.baby_chairs_available -= customer.baby_chair_count as i32;
-                    res.wheelchairs_available -= customer.wheelchair_count as i32; // Deduct wheelchairs
+                    res.wheelchairs_available -= customer.wheelchair_count as i32;
                     
                     for sid in &seat_ids {
                         if let Some(seat) = res.seats.iter_mut().find(|s| s.config.id == *sid) {
@@ -158,27 +158,14 @@ pub fn start_simulation(
                     res.events.push(SimEvent {
                         time: customer.arrival_time, 
                         sequence: seq,
-                        family_id: customer.family_id, // Note: time set to arrival time
+                        family_id: customer.family_id,
                         action: Action::Wait, log_message: log,
                     });
                     has_logged_wait = true;
                 }
 
                 // Wait for notification
-                let result = cvar.wait_timeout(res, Duration::from_millis(WAIT_TIMEOUT_MS)).unwrap();
-                res = result.0;
-                if result.1.timed_out() {
-                    // Timeout handling
-                    let log = format!("[TIMEOUT] Customer {} gave up.", customer.id);
-                    let seq = res.events.len();
-                    res.events.push(SimEvent {
-                        time: customer.arrival_time + 999, 
-                        sequence: seq,
-                        family_id: customer.family_id,
-                        action: Action::Error, log_message: log,
-                    });
-                    return;
-                }
+                res = cvar.wait(res).unwrap();
             }
 
             // 3. Sit
@@ -276,7 +263,6 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             chosen_seats.push(s.config.id.clone());
         } else if customer.party_size == 4 {
             // Downgrade logic: 4-person families can accept 4 consecutive single seats at the bar
-            // Assume bar seat IDs are ordered (e.g., S01, S02...)
             let single_seats: Vec<&SeatState> = res.seats.iter()
                 .filter(|s| s.config.type_ == "SINGLE")
                 .collect();
@@ -290,14 +276,14 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             }
         }
     } else {
-        // Individuals: Prefer bar (SINGLE)
-        let seat = res.seats.iter()
+        // Individuals: MUST use bar (SINGLE) first
+        let bar_seat = res.seats.iter()
             .find(|s| s.occupied_by.is_none() && s.config.type_ == "SINGLE");
             
-        if let Some(s) = seat {
+        if let Some(s) = bar_seat {
             chosen_seats.push(s.config.id.clone());
         } else {
-             // Fallback: Find any empty sofa (4P/6P)
+             // Fallback: Only use sofa if NO bar seats are available
              let any_sofa = res.seats.iter()
                 .find(|s| s.occupied_by.is_none() && s.config.type_ != "SINGLE");
              if let Some(s) = any_sofa {
