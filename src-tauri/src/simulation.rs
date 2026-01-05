@@ -148,6 +148,23 @@ pub fn start_simulation(
                         }
                     }
                     seated_seat_ids = seat_ids;
+
+                    // Generate SEATED log immediately while holding the lock to ensure atomicity
+                    let last_time = res.events.last().map(|e| e.time).unwrap_or(0);
+                    let sit_time = std::cmp::max(last_time, customer.arrival_time);
+                    let seat_str = seated_seat_ids.join(",");
+                    let result_str = format!("seated, id:[{}]", seat_str);
+                    
+                    let log = generate_log(sit_time, &customer, "SEATED", &result_str, &res);
+                    let seq = res.events.len();
+                    res.events.push(SimEvent {
+                        time: sit_time, 
+                        sequence: seq,
+                        family_id: customer.family_id,
+                        action: Action::Sit(seat_str.clone()),
+                        log_message: log,
+                    });
+
                     break; // Exit wait loop
                 }
 
@@ -168,34 +185,24 @@ pub fn start_simulation(
                 res = cvar.wait(res).unwrap();
             }
 
-            // 3. Sit
-            let last_time = res.events.last().map(|e| e.time).unwrap_or(0);
-            let sit_time = std::cmp::max(last_time, customer.arrival_time);
-            let seat_str = seated_seat_ids.join(",");
-            let result_str = format!("seated, id:[{}]", seat_str);
-            
-            let log = generate_log(sit_time, &customer, "SEATED", &result_str, &res);
-            let seq = res.events.len();
-            res.events.push(SimEvent {
-                time: sit_time, 
-                sequence: seq,
-                family_id: customer.family_id,
-                action: Action::Sit(seat_str.clone()),
-                log_message: log,
-            });
-
-            drop(res); // Release lock, start dining
-            
-            // Add small delay to simulate dining process and prevent instant resource release
+            // 3. Dining (Lock is released here)
+            drop(res); 
             thread::sleep(Duration::from_millis(customer.est_dining_time * 10));
 
             // 4. Leave
-            let leave_time = sit_time + customer.est_dining_time;
             let mut res = lock.lock().unwrap();
+            let last_time = res.events.last().map(|e| e.time).unwrap_or(0);
+            let sit_time = res.events.iter()
+                .filter(|e| e.family_id == customer.family_id)
+                .filter_map(|e| if let Action::Sit(_) = e.action { Some(e.time) } else { None })
+                .next()
+                .unwrap_or(customer.arrival_time);
+            
+            let leave_time = sit_time + customer.est_dining_time;
             
             // Return resources
             res.baby_chairs_available += customer.baby_chair_count as i32;
-            res.wheelchairs_available += customer.wheelchair_count as i32; // Return wheelchairs
+            res.wheelchairs_available += customer.wheelchair_count as i32;
             
             for sid in &seated_seat_ids {
                 if let Some(seat) = res.seats.iter_mut().find(|s| s.config.id == *sid) {
@@ -203,6 +210,7 @@ pub fn start_simulation(
                 }
             }
             
+            let seat_str = seated_seat_ids.join(",");
             let result_str = format!("release, id:[{}]", seat_str);
             let log = generate_log(leave_time, &customer, "LEFT", &result_str, &res);
             
@@ -283,7 +291,8 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
         if let Some(s) = bar_seat {
             chosen_seats.push(s.config.id.clone());
         } else {
-             // Fallback: Only use sofa if NO bar seats are available
+             // Fallback: Only use sofa if NO bar seats are available (Lowest priority)
+             // This is strictly for when the bar is completely full
              let any_sofa = res.seats.iter()
                 .find(|s| s.occupied_by.is_none() && s.config.type_ != "SINGLE");
              if let Some(s) = any_sofa {
