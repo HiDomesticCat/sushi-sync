@@ -90,21 +90,30 @@ pub fn start_simulation(
     baby_chairs: i32,
     wheelchairs: i32
 ) -> Result<Vec<SimulationFrame>> {
-    let mut customers = parser::parse_customers(&csv_content)
-        .map_err(|e| AppError::CsvParseError(e.to_string()))?;
-    
     // Sort customers by arrival time
-    // Since we already normalized -1 to 0 in parser.rs, we need to ensure 
-    // those that were originally -1 are processed first.
-    // The parser preserves order, so a stable sort on arrival_time is sufficient.
-    customers.sort_by_key(|c| c.arrival_time);
+    // Use i64 for comparison to correctly handle -1 as being earlier than 0
+    // If arrival times are equal, prioritize pre-occupied IDs (>= 1000)
+    customers.sort_by(|a, b| {
+        let a_time = a.arrival_time as i64;
+        let b_time = b.arrival_time as i64;
+        if a_time == b_time {
+            let a_is_pre = a.family_id >= 1000 && a.family_id < 2000;
+            let b_is_pre = b.family_id >= 1000 && b.family_id < 2000;
+            b_is_pre.cmp(&a_is_pre) // True (pre-occupied) comes first
+        } else {
+            a_time.cmp(&b_time)
+        }
+    });
 
+    // Normalize arrival times for simulation logic (map negative to 0)
+    // but keep the sorted order which already prioritized -1
+    // Also ensure pre-occupied customers (-1) have their arrival_time set to 0 
+    // so they are processed at the start of the simulation timeline.
     let mut pre_occupied_ids = std::collections::HashSet::new();
-    // We can't rely on raw_time < 0 here because it's already normalized.
-    // However, we know that pre-occupied customers are at the start of the list 
-    // and have arrival_time 0.
-    for c in &customers {
-        if c.arrival_time == 0 && c.family_id >= 1000 {
+    for c in &mut customers {
+        let raw_time = c.arrival_time as i64;
+        if raw_time < 0 {
+            c.arrival_time = 0;
             pre_occupied_ids.insert(c.family_id);
         }
     }
@@ -282,11 +291,17 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
     } else if customer.party_size > 1 {
         // Multi-person families: MUST prefer sofa (4P/6P)
         // 1. Try to find a perfect match or larger sofa
-        let sofa = res.seats.iter()
+        // Sort sofas to try 4P before 6P for smaller families to save larger tables
+        let mut sofas: Vec<&SeatState> = res.seats.iter()
+            .filter(|s| s.occupied_by.is_none() && s.config.type_ != "SINGLE")
+            .collect();
+        
+        sofas.sort_by_key(|s| if s.config.type_ == "4P" { 4 } else { 6 });
+
+        let sofa = sofas.into_iter()
             .find(|s| {
-                s.occupied_by.is_none() && 
-                ((s.config.type_ == "4P" && customer.party_size <= 4) || 
-                 (s.config.type_ == "6P" && customer.party_size <= 6))
+                (s.config.type_ == "4P" && customer.party_size <= 4) || 
+                (s.config.type_ == "6P" && customer.party_size <= 6)
             });
             
         if let Some(s) = sofa {
