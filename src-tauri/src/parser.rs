@@ -15,9 +15,14 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
 
         let id_raw = parts[0].trim().parse::<i32>().unwrap_or(0);
         if id_raw == 0 { continue; }
-        // Use raw i32 bits cast to u32 to preserve negative IDs for the backend
-        // while allowing the frontend to handle the display if needed.
-        let id = id_raw as u32;
+        
+        // If ID is -1, we assign a unique negative ID based on the line number 
+        // to ensure they don't all have the same ID, while keeping them negative.
+        let id = if id_raw == -1 {
+            -(i as i32)
+        } else {
+            id_raw
+        } as u32;
 
         let arrival_time_raw = parts.get(1).and_then(|s| s.trim().parse::<i64>().ok()).unwrap_or(0);
         
