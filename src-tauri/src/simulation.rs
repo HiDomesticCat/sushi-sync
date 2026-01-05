@@ -341,9 +341,14 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
         } else {
              // Fallback: Only use sofa if NO bar seats are available (Lowest priority)
              // This is strictly for when the bar is completely full
-             let any_sofa = res.seats.iter()
-                .find(|s| s.occupied_by.is_none() && s.config.type_ != "SINGLE");
-             if let Some(s) = any_sofa {
+             let mut sofas: Vec<&SeatState> = res.seats.iter()
+                .filter(|s| s.occupied_by.is_none() && s.config.type_ != "SINGLE")
+                .collect();
+             
+             // For individuals, try 4P before 6P
+             sofas.sort_by_key(|s| if s.config.type_ == "4P" { 4 } else { 6 });
+             
+             if let Some(s) = sofas.first() {
                  chosen_seats.push(s.config.id.clone());
              }
         }
