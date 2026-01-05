@@ -90,9 +90,13 @@ pub fn start_simulation(
     baby_chairs: i32,
     wheelchairs: i32
 ) -> Result<Vec<SimulationFrame>> {
-    let customers = parser::parse_customers(&csv_content)
+    let mut customers = parser::parse_customers(&csv_content)
         .map_err(|e| AppError::CsvParseError(e.to_string()))?;
     
+    // Sort customers by arrival time to ensure those with -1 (mapped to 0) 
+    // or early arrival times are processed first by the thread spawner
+    customers.sort_by_key(|c| c.arrival_time);
+
     let seats_config: Vec<SeatConfig> = serde_json::from_str(&seat_config_json)
         .map_err(|e| AppError::JsonParseError(e.to_string()))?;
 
