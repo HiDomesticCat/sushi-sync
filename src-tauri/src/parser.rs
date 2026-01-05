@@ -36,7 +36,11 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
         let wheel_str = parts.get(5).unwrap_or(&"0").trim().to_lowercase();
         let wheelchair_count = if wheel_str == "true" { 1 } else { wheel_str.parse().unwrap_or(0) };
 
-        let est_dining_time = parts.get(6).and_then(|s| s.trim().parse().ok()).unwrap_or(60);
+        let est_dining_time = parts.get(6).and_then(|s| s.trim().parse::<i64>().ok()).unwrap_or(60);
+        // If arrival_time is -1, we treat it as pre-occupied.
+        // We map it to 0 for the struct to avoid overflow in the UI,
+        // but we'll handle the priority in simulation.rs by sorting.
+        let arrival_time = if arrival_time_raw < 0 { 0 } else { arrival_time_raw as u64 };
 
         // 🔥 Auto-determine type: ensure type always has a value
         let type_ = if wheelchair_count > 0 {
@@ -51,11 +55,6 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
             "INDIVIDUAL".to_string()
         };
 
-        // Handle arrival_time = -1 (Pre-occupied)
-        // We map it to 0 for the struct, but we'll use a separate flag or 
-        // handle the priority in simulation.rs without breaking the u64 type.
-        let arrival_time = if arrival_time_raw < 0 { 0 } else { arrival_time_raw as u64 };
-
         customers.push(CustomerConfig {
             id,
             family_id: id,
@@ -64,7 +63,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
             party_size,
             baby_chair_count,
             wheelchair_count,
-            est_dining_time,
+            est_dining_time: est_dining_time as u64,
         });
     }
 

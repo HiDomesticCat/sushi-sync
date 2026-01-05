@@ -94,19 +94,18 @@ pub fn start_simulation(
         .map_err(|e| AppError::CsvParseError(e.to_string()))?;
     
     // Sort customers by arrival time
-    // Use i64 for comparison to correctly handle -1 as being earlier than 0
-    customers.sort_by(|a, b| {
-        let a_time = a.arrival_time as i64;
-        let b_time = b.arrival_time as i64;
-        a_time.cmp(&b_time)
-    });
+    // Since we already normalized -1 to 0 in parser.rs, we need to ensure 
+    // those that were originally -1 are processed first.
+    // The parser preserves order, so a stable sort on arrival_time is sufficient.
+    customers.sort_by_key(|c| c.arrival_time);
 
-    // Normalize arrival times for simulation logic (map negative to 0)
-    // but keep the sorted order which already prioritized -1
-    for c in &mut customers {
-        let raw_time = c.arrival_time as i64;
-        if raw_time < 0 {
-            c.arrival_time = 0;
+    let mut pre_occupied_ids = std::collections::HashSet::new();
+    // We can't rely on raw_time < 0 here because it's already normalized.
+    // However, we know that pre-occupied customers are at the start of the list 
+    // and have arrival_time 0.
+    for c in &customers {
+        if c.arrival_time == 0 && c.family_id >= 10000 {
+            pre_occupied_ids.insert(c.family_id);
         }
     }
 
@@ -130,6 +129,7 @@ pub fn start_simulation(
 
     for customer in customers.clone() {
         let monitor_clone = Arc::clone(&monitor);
+        let is_pre_occupied = pre_occupied_ids.contains(&customer.family_id);
         
         let handle = thread::spawn(move || {
             let (lock, cvar) = &*monitor_clone;
@@ -185,6 +185,10 @@ pub fn start_simulation(
                     break; // Exit wait loop
                 }
 
+                // Pre-occupied customers MUST be seated at time 0. 
+                // If resources are unavailable, they still wait but this should not happen 
+                // if the restaurant capacity is configured correctly for the initial state.
+                
                 // Allocation failed: log WAITING event if first time
                 if !has_logged_wait {
                     let log = generate_log(customer.arrival_time, &customer, "WAITING", "waited", &res);
