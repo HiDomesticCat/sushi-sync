@@ -255,11 +255,11 @@
             <tbody>
               {#each $customerConfigStore as customer}
                 <tr class="border-b border-border/30 hover:bg-black/5">
-                  <td class="py-2 px-2 font-mono">{customer.familyId}</td>
+                  <td class="py-2 px-2 font-mono">{(customer.familyId as any) | 0}</td>
                   <td class="py-2 px-2">
                     <span class="text-lg mr-1">{getTypeIcon(customer.type)}</span>
                   </td>
-                  <td class="py-2 px-2">{customer.arrivalTime}s</td>
+                  <td class="py-2 px-2">{(customer.arrivalTime as any) | 0}s</td>
                   <td class="py-2 px-2">{customer.partySize}</td>
                   <td class="py-2 px-2">{customer.estDiningTime}s</td>
                   <td class="py-2 px-2">
