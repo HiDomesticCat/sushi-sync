@@ -43,10 +43,15 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
             "INDIVIDUAL".to_string()
         };
 
+        // Handle arrival_time = -1 (Pre-occupied)
+        // We map it to 0 for the struct, but we'll use a separate flag or 
+        // handle the priority in simulation.rs without breaking the u64 type.
+        let arrival_time = if arrival_time_raw < 0 { 0 } else { arrival_time_raw as u64 };
+
         customers.push(CustomerConfig {
             id,
             family_id: id,
-            arrival_time: arrival_time_raw as u64, // Keep raw bits for sorting, will normalize in simulation.rs
+            arrival_time,
             type_, // Use the auto-determined result here
             party_size,
             baby_chair_count,
