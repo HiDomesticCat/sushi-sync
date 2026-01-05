@@ -90,6 +90,9 @@ pub fn start_simulation(
     baby_chairs: i32,
     wheelchairs: i32
 ) -> Result<Vec<SimulationFrame>> {
+    let customers = parser::parse_customers(&csv_content)
+        .map_err(|e| AppError::CsvParseError(e.to_string()))?;
+    
     // Sort customers by arrival time
     // Use i64 for comparison to correctly handle -1 as being earlier than 0
     // If arrival times are equal, prioritize pre-occupied IDs (>= 1000)
@@ -122,7 +125,7 @@ pub fn start_simulation(
     let seats_config: Vec<SeatConfig> = serde_json::from_str(&seat_config_json)
         .map_err(|e| AppError::JsonParseError(e.to_string()))?;
 
-    if customers.is_empty() { return Ok(Vec::new()); }
+    if sorted_customers.is_empty() { return Ok(Vec::new()); }
 
     let initial_resources = SushiResources {
         baby_chairs_available: baby_chairs,
@@ -139,7 +142,7 @@ pub fn start_simulation(
 
     for customer in sorted_customers.clone() {
         let monitor_clone = Arc::clone(&monitor);
-        let is_pre_occupied = pre_occupied_ids.contains(&customer.family_id);
+        let _is_pre_occupied = pre_occupied_ids.contains(&customer.family_id);
         
         let handle = thread::spawn(move || {
             let (lock, cvar) = &*monitor_clone;
@@ -222,7 +225,6 @@ pub fn start_simulation(
 
             // 4. Leave
             let mut res = lock.lock().unwrap();
-            let last_time = res.events.last().map(|e| e.time).unwrap_or(0);
             let sit_time = res.events.iter()
                 .filter(|e| e.family_id == customer.family_id)
                 .filter_map(|e| if let Action::Sit(_) = e.action { Some(e.time) } else { None })

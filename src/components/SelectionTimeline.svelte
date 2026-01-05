@@ -34,17 +34,17 @@
     const currentOccupants = new Map<string, { familyId: number; startTime: number }>();
 
     frames.forEach(frame => {
-      frame.events.forEach(event => {
-        if (event.type === 'SEATED' && event.seatId && event.seatId.split(',').some(id => seatIds.includes(id.trim()))) {
+      frame.events.forEach((event: any) => {
+        if (event.type === 'SEATED' && event.seatId && event.seatId.split(',').some((id: string) => seatIds.includes(id.trim()))) {
           // Handle multi-seat allocation (e.g., "S01,S02")
-          event.seatId.split(',').forEach(id => {
+          event.seatId.split(',').forEach((id: string) => {
             const trimmedId = id.trim();
             if (seatIds.includes(trimmedId)) {
               currentOccupants.set(trimmedId, { familyId: event.familyId, startTime: event.timestamp });
             }
           });
-        } else if (event.type === 'LEFT' && event.seatId && event.seatId.split(',').some(id => seatIds.includes(id.trim()))) {
-          event.seatId.split(',').forEach(id => {
+        } else if (event.type === 'LEFT' && event.seatId && event.seatId.split(',').some((id: string) => seatIds.includes(id.trim()))) {
+          event.seatId.split(',').forEach((id: string) => {
             const trimmedId = id.trim();
             if (seatIds.includes(trimmedId)) {
               const occupant = currentOccupants.get(trimmedId);
