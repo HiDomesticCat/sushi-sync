@@ -280,7 +280,8 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             chosen_seats.push(s.config.id.clone());
         }
     } else if customer.party_size > 1 {
-        // Multi-person families: Prefer sofa (4P/6P)
+        // Multi-person families: MUST prefer sofa (4P/6P)
+        // 1. Try to find a perfect match or larger sofa
         let sofa = res.seats.iter()
             .find(|s| {
                 s.occupied_by.is_none() && 
@@ -290,18 +291,19 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             
         if let Some(s) = sofa {
             chosen_seats.push(s.config.id.clone());
-        } else if customer.party_size <= 6 {
-            // Downgrade logic: ONLY if no sofas are available
-            // Families can accept consecutive single seats at the bar
-            let single_seats: Vec<&SeatState> = res.seats.iter()
-                .filter(|s| s.config.type_ == "SINGLE")
-                .collect();
-            
-            for i in 0..=single_seats.len().saturating_sub(customer.party_size as usize) {
-                let window = &single_seats[i..i+customer.party_size as usize];
-                if window.iter().all(|s| s.occupied_by.is_none()) {
-                    chosen_seats = window.iter().map(|s| s.config.id.clone()).collect();
-                    break;
+        } else {
+            // 2. ONLY if NO sofas are available, try to downgrade to bar
+            if customer.party_size <= 6 {
+                let single_seats: Vec<&SeatState> = res.seats.iter()
+                    .filter(|s| s.config.type_ == "SINGLE")
+                    .collect();
+                
+                for i in 0..=single_seats.len().saturating_sub(customer.party_size as usize) {
+                    let window = &single_seats[i..i+customer.party_size as usize];
+                    if window.iter().all(|s| s.occupied_by.is_none()) {
+                        chosen_seats = window.iter().map(|s| s.config.id.clone()).collect();
+                        break;
+                    }
                 }
             }
         }
