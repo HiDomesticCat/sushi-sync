@@ -15,7 +15,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
 
         let id_raw = parts[0].trim().parse::<i32>().unwrap_or(0);
         if id_raw == 0 { continue; }
-        let id = if id_raw < 0 { 9999 + id_raw.abs() as u32 } else { id_raw as u32 };
+        let id = id_raw.abs() as u32;
 
         let arrival_time_raw = parts.get(1).and_then(|s| s.trim().parse::<i64>().ok()).unwrap_or(0);
         
@@ -46,7 +46,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
         customers.push(CustomerConfig {
             id,
             family_id: id,
-            arrival_time: arrival_time_raw as u64, // Keep raw i64 cast to u64 (will be large for -1)
+            arrival_time: arrival_time_raw as u64, // Keep raw bits for sorting, will normalize in simulation.rs
             type_, // Use the auto-determined result here
             party_size,
             baby_chair_count,
