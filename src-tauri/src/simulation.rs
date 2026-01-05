@@ -103,7 +103,12 @@ pub fn start_simulation(
         if a_time == b_time {
             let a_is_pre = a.family_id >= 1000 && a.family_id < 2000;
             let b_is_pre = b.family_id >= 1000 && b.family_id < 2000;
-            b_is_pre.cmp(&a_is_pre) // True (pre-occupied) comes first
+            if a_is_pre != b_is_pre {
+                b_is_pre.cmp(&a_is_pre) // True (pre-occupied) comes first
+            } else {
+                // If both are pre-occupied or both are normal, sort by ID to ensure stability
+                a.family_id.cmp(&b.family_id)
+            }
         } else {
             a_time.cmp(&b_time)
         }
@@ -311,11 +316,12 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             chosen_seats.push(s.config.id.clone());
         } else {
             // 2. ONLY if NO sofas are available, try to downgrade to bar
-            if customer.party_size <= 6 {
-                let single_seats: Vec<&SeatState> = res.seats.iter()
-                    .filter(|s| s.config.type_ == "SINGLE")
-                    .collect();
-                
+            // Check if there are enough consecutive bar seats
+            let single_seats: Vec<&SeatState> = res.seats.iter()
+                .filter(|s| s.config.type_ == "SINGLE")
+                .collect();
+            
+            if customer.party_size <= single_seats.len() as u32 {
                 for i in 0..=single_seats.len().saturating_sub(customer.party_size as usize) {
                     let window = &single_seats[i..i+customer.party_size as usize];
                     if window.iter().all(|s| s.occupied_by.is_none()) {
