@@ -93,7 +93,8 @@ pub fn start_simulation(
     // Sort customers by arrival time
     // Use i64 for comparison to correctly handle -1 as being earlier than 0
     // If arrival times are equal, prioritize pre-occupied IDs (>= 1000)
-    customers.sort_by(|a, b| {
+    let mut sorted_customers = customers.clone();
+    sorted_customers.sort_by(|a, b| {
         let a_time = a.arrival_time as i64;
         let b_time = b.arrival_time as i64;
         if a_time == b_time {
@@ -110,7 +111,7 @@ pub fn start_simulation(
     // Also ensure pre-occupied customers (-1) have their arrival_time set to 0 
     // so they are processed at the start of the simulation timeline.
     let mut pre_occupied_ids = std::collections::HashSet::new();
-    for c in &mut customers {
+    for c in &mut sorted_customers {
         let raw_time = c.arrival_time as i64;
         if raw_time < 0 {
             c.arrival_time = 0;
@@ -136,7 +137,7 @@ pub fn start_simulation(
     let monitor = Arc::new((Mutex::new(initial_resources), Condvar::new()));
     let mut handles = vec![];
 
-    for customer in customers.clone() {
+    for customer in sorted_customers.clone() {
         let monitor_clone = Arc::clone(&monitor);
         let is_pre_occupied = pre_occupied_ids.contains(&customer.family_id);
         
@@ -260,7 +261,7 @@ pub fn start_simulation(
 
     for h in handles { let _ = h.join(); }
 
-    generate_frames(monitor, &seats_config, &customers)
+    generate_frames(monitor, &seats_config, &sorted_customers)
 }
 
 fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<String>> {
