@@ -13,8 +13,9 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
         let parts: Vec<&str> = line.split(',').collect();
         if parts.len() < 2 { continue; } // Lenient check, as long as basic fields exist
 
-        let id = parts[0].trim().parse::<u32>().unwrap_or(0);
-        if id == 0 { continue; }
+        let id_raw = parts[0].trim().parse::<i32>().unwrap_or(0);
+        if id_raw == 0 { continue; }
+        let id = if id_raw < 0 { 9999 + id_raw.abs() as u32 } else { id_raw as u32 };
 
         let arrival_time_raw = parts.get(1).and_then(|s| s.trim().parse::<i64>().ok()).unwrap_or(0);
         

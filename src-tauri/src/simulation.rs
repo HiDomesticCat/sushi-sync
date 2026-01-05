@@ -95,6 +95,7 @@ pub fn start_simulation(
     
     // Sort customers by arrival time
     // Use i64 for comparison to correctly handle -1 as being earlier than 0
+    // If arrival times are equal, preserve original order (stable sort)
     customers.sort_by(|a, b| {
         let a_time = a.arrival_time as i64;
         let b_time = b.arrival_time as i64;
@@ -103,8 +104,11 @@ pub fn start_simulation(
 
     // Normalize arrival times for simulation logic (map negative to 0)
     // but keep the sorted order which already prioritized -1
+    // Also ensure pre-occupied customers (-1) have their arrival_time set to 0 
+    // so they are processed at the start of the simulation timeline.
     for c in &mut customers {
-        if (c.arrival_time as i64) < 0 {
+        let raw_time = c.arrival_time as i64;
+        if raw_time < 0 {
             c.arrival_time = 0;
         }
     }
