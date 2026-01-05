@@ -290,14 +290,15 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             
         if let Some(s) = sofa {
             chosen_seats.push(s.config.id.clone());
-        } else if customer.party_size == 4 {
-            // Downgrade logic: 4-person families can accept 4 consecutive single seats at the bar
+        } else if customer.party_size <= 4 {
+            // Downgrade logic: ONLY if no sofas are available
+            // 4-person families (or smaller) can accept consecutive single seats at the bar
             let single_seats: Vec<&SeatState> = res.seats.iter()
                 .filter(|s| s.config.type_ == "SINGLE")
                 .collect();
             
-            for i in 0..=single_seats.len().saturating_sub(4) {
-                let window = &single_seats[i..i+4];
+            for i in 0..=single_seats.len().saturating_sub(customer.party_size as usize) {
+                let window = &single_seats[i..i+customer.party_size as usize];
                 if window.iter().all(|s| s.occupied_by.is_none()) {
                     chosen_seats = window.iter().map(|s| s.config.id.clone()).collect();
                     break;

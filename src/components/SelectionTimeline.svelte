@@ -35,21 +35,32 @@
 
     frames.forEach(frame => {
       frame.events.forEach(event => {
-        if (event.type === 'SEATED' && event.seatId && seatIds.includes(event.seatId)) {
-          currentOccupants.set(event.seatId, { familyId: event.familyId, startTime: event.timestamp });
-        } else if (event.type === 'LEFT' && event.seatId && seatIds.includes(event.seatId)) {
-          const occupant = currentOccupants.get(event.seatId);
-          if (occupant && occupant.familyId === event.familyId) {
-            intervals.push({
-              seatId: event.seatId,
-              familyId: occupant.familyId,
-              startTime: occupant.startTime,
-              endTime: event.timestamp,
-              color: familyColors.get(occupant.familyId) || '#888',
-              type: `Family ${occupant.familyId}`
-            });
-            currentOccupants.delete(event.seatId);
-          }
+        if (event.type === 'SEATED' && event.seatId && event.seatId.split(',').some(id => seatIds.includes(id.trim()))) {
+          // Handle multi-seat allocation (e.g., "S01,S02")
+          event.seatId.split(',').forEach(id => {
+            const trimmedId = id.trim();
+            if (seatIds.includes(trimmedId)) {
+              currentOccupants.set(trimmedId, { familyId: event.familyId, startTime: event.timestamp });
+            }
+          });
+        } else if (event.type === 'LEFT' && event.seatId && event.seatId.split(',').some(id => seatIds.includes(id.trim()))) {
+          event.seatId.split(',').forEach(id => {
+            const trimmedId = id.trim();
+            if (seatIds.includes(trimmedId)) {
+              const occupant = currentOccupants.get(trimmedId);
+              if (occupant && occupant.familyId === event.familyId) {
+                intervals.push({
+                  seatId: trimmedId,
+                  familyId: occupant.familyId,
+                  startTime: occupant.startTime,
+                  endTime: event.timestamp,
+                  color: familyColors.get(occupant.familyId) || '#888',
+                  type: `Family ${occupant.familyId}`
+                });
+                currentOccupants.delete(trimmedId);
+              }
+            }
+          });
         }
       });
     });
