@@ -93,9 +93,21 @@ pub fn start_simulation(
     let mut customers = parser::parse_customers(&csv_content)
         .map_err(|e| AppError::CsvParseError(e.to_string()))?;
     
-    // Sort customers by arrival time to ensure those with -1 (mapped to 0) 
-    // or early arrival times are processed first by the thread spawner
-    customers.sort_by_key(|c| c.arrival_time);
+    // Sort customers by arrival time
+    // Use i64 for comparison to correctly handle -1 as being earlier than 0
+    customers.sort_by(|a, b| {
+        let a_time = a.arrival_time as i64;
+        let b_time = b.arrival_time as i64;
+        a_time.cmp(&b_time)
+    });
+
+    // Normalize arrival times for simulation logic (map negative to 0)
+    // but keep the sorted order which already prioritized -1
+    for c in &mut customers {
+        if (c.arrival_time as i64) < 0 {
+            c.arrival_time = 0;
+        }
+    }
 
     let seats_config: Vec<SeatConfig> = serde_json::from_str(&seat_config_json)
         .map_err(|e| AppError::JsonParseError(e.to_string()))?;

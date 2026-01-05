@@ -17,9 +17,6 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
         if id == 0 { continue; }
 
         let arrival_time_raw = parts.get(1).and_then(|s| s.trim().parse::<i64>().ok()).unwrap_or(0);
-        // Handle arrival_time = -1 (Pre-occupied/Already present at start)
-        // Map -1 to 0 for simulation logic, but treat as highest priority
-        let arrival_time = if arrival_time_raw < 0 { 0 } else { arrival_time_raw as u64 };
         
         // Skip parts[2] (original type field)
         let party_size = parts.get(3).and_then(|s| s.trim().parse().ok()).unwrap_or(1);
@@ -48,7 +45,7 @@ pub fn parse_customers(csv_content: &str) -> Result<Vec<CustomerConfig>, Box<dyn
         customers.push(CustomerConfig {
             id,
             family_id: id,
-            arrival_time,
+            arrival_time: arrival_time_raw as u64, // Keep raw i64 cast to u64 (will be large for -1)
             type_, // Use the auto-determined result here
             party_size,
             baby_chair_count,
