@@ -104,7 +104,7 @@ pub fn start_simulation(
     // However, we know that pre-occupied customers are at the start of the list 
     // and have arrival_time 0.
     for c in &customers {
-        if c.arrival_time == 0 && c.family_id >= 10000 {
+        if c.arrival_time == 0 && c.family_id >= 1000 {
             pre_occupied_ids.insert(c.family_id);
         }
     }
@@ -290,9 +290,9 @@ fn try_allocate(res: &SushiResources, customer: &CustomerConfig) -> Option<Vec<S
             
         if let Some(s) = sofa {
             chosen_seats.push(s.config.id.clone());
-        } else if customer.party_size <= 4 {
+        } else if customer.party_size <= 6 {
             // Downgrade logic: ONLY if no sofas are available
-            // 4-person families (or smaller) can accept consecutive single seats at the bar
+            // Families can accept consecutive single seats at the bar
             let single_seats: Vec<&SeatState> = res.seats.iter()
                 .filter(|s| s.config.type_ == "SINGLE")
                 .collect();
